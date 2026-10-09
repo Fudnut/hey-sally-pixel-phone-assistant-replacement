@@ -314,7 +314,7 @@ public class WakeService extends Service {
                 Log.i(TAG, "COMMAND_DEVICE_OPTIONS count=" + count);
                 getSharedPreferences("probe", MODE_PRIVATE).edit()
                         .putString("lastAttempt", "System recognizer returned " + count + " options").apply();
-                VoiceCommand command = null;
+                VoiceCommand command = VoiceCommand.choose(options);
                 ArrayList<String> playlistNames = new ArrayList<>();
                 ArrayList<String> radioNames = new ArrayList<>();
                 if (options != null) for (String option : options) {
@@ -324,13 +324,7 @@ public class WakeService extends Service {
                             && "playlist".equals(candidate.type)) playlistNames.add(candidate.query);
                     if (candidate.kind == VoiceCommand.Kind.PLAY_SPECIAL
                             && "radio".equals(candidate.type) && !candidate.query.isBlank()) radioNames.add(candidate.query);
-                    if (command == null) command = candidate;
-                    if ((candidate.kind == VoiceCommand.Kind.PLAY_SPECIAL
-                            || candidate.kind == VoiceCommand.Kind.PLAY && !"auto".equals(candidate.type))
-                            && command.kind == VoiceCommand.Kind.PLAY
-                            && "auto".equals(command.type)) {
-                        command = candidate;
-                    }
+
                 }
                 try {
                     if (command != null) executeCommand(command,

@@ -4,6 +4,16 @@ public final class PlaylistBrowseCheck {
     public static void main(String[] args) {
         for (String phrase : new String[]{"play number two please", "play number two.", "play number two please.", "play two please"})
             command(phrase, "PLAY_NUMBER", "2");
+        for (String top : new String[]{"play number tree", "play number free"}) {
+            VoiceCommand chosen = VoiceCommand.choose(java.util.List.of(top, "play number two"));
+            if (chosen.kind != VoiceCommand.Kind.PLAY_NUMBER || !chosen.query.equals("2"))
+                throw new AssertionError("Numeric alternative must replace only the bounded number confusion");
+        }
+        for (String title : new String[]{"number of the beast", "number one crush", "number 9 dream", "number theory"}) {
+            VoiceCommand chosen = VoiceCommand.choose(java.util.List.of("play " + title, "play number two"));
+            if (chosen.kind != VoiceCommand.Kind.PLAY || !chosen.query.equals(title))
+                throw new AssertionError("N-best arbitration must preserve number-prefixed titles");
+        }
         Throwable[] failures = {new SecurityException("private token/title"),
                 new java.net.SocketTimeoutException("private host"), new java.io.IOException("private URL"),
                 new java.util.NoSuchElementException("private playlist"), new RuntimeException("private SDK error")};

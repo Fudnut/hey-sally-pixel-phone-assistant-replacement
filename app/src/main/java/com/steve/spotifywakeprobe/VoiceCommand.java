@@ -56,11 +56,29 @@ final class VoiceCommand {
         if ("auto".equals(type)) {
             VoiceCommand special = special(query);
             if (special != null) return special;
-            Integer number = spokenNumber(query.startsWith("number ") ? query.substring(7) : query);
-            if (number != null) return new VoiceCommand(Kind.PLAY_NUMBER, number.toString(), "", query);
+            String numeric = query.replaceAll("[.!?,]+$", "").trim().replaceFirst(" please$", "").trim();
+            Integer number = spokenNumber(numeric.startsWith("number ") ? numeric.substring(7) : numeric);
+            if (number != null) return new VoiceCommand(Kind.PLAY_NUMBER, number.toString(), "", numeric);
         }
         if (query.isEmpty() || (("song".equals(type) || "auto".equals(type)) && query.startsWith("by "))) return null;
         return new VoiceCommand(Kind.PLAY, query, type);
+    }
+
+    static VoiceCommand choose(java.util.List<String> options) {
+        VoiceCommand command = null;
+        if (options == null) return null;
+        for (String option : options) {
+            VoiceCommand candidate = parse(option);
+            if (candidate == null) continue;
+            if (command == null) command = candidate;
+            if (command.kind == Kind.PLAY && "auto".equals(command.type)
+                    && (candidate.kind == Kind.PLAY_SPECIAL
+                        || candidate.kind == Kind.PLAY && !"auto".equals(candidate.type)
+                        // Only observed single-word number confusions, never arbitrary titles.
+                        || candidate.kind == Kind.PLAY_NUMBER && command.query.matches("number (?:tree|free)")))
+                command = candidate;
+        }
+        return command;
     }
 
     VoiceCommand forPlaylistContext(boolean browseActive) {
