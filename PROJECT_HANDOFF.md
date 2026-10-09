@@ -10,7 +10,7 @@
 
 ## Current implementation
 
-The Android app is still named **Spotify Wake Probe**, its package is `com.steve.spotifywakeprobe`, and its wake phrase is **Hey Spotify**. The repository name does not change these. Renaming the app or changing its wake phrase to Hey Sally requires a separate implementation and real-device test; do not assume that has happened.
+The Android app is still named **Spotify Wake Probe**, its package is `com.steve.spotifywakeprobe`, and its wake phrase is **Hey Sally**. The activation grammar, exact matcher, setup instructions, notifications and retry replies now use the new phrase. The previous Hey Spotify phrase is rejected by the matcher. Real-device recognition of Hey Sally remains untested; the installed private trial app has not been updated.
 
 The app provides hands-free wake detection, Spotify playback controls, song/artist/playlist lookup, spoken playlist pages and numbered selection, Liked Songs, DJ and Daily Mix requests. Radio matches stations in recommendations or saved playlists. Saving a missing station in Spotify and retrying has passed a user test. Native Local Files playback was not established; a playlist named Local Files is the existing fallback.
 
@@ -42,3 +42,10 @@ Do not copy private handoffs, diagnostics, registration values, keys, local cach
 - Keep no-touch/locked-screen operation as a requirement. Validate real audible playback with the user; a Spotify success callback alone is insufficient.
 - No paid APIs or hosted model integration are configured or authorized.
 - Preserve existing work, use focused checks, and checkpoint task-related changes with commits/pushes. Do not claim new device tests from the earlier short tests.
+
+## Wake phrase checkpoint - 10 October 2026
+
+- Changed activation from Hey Spotify to Hey Sally, including the Vosk wake grammar, exact matcher, on-screen instructions, notifications and retry replies. App name, package, command handling and capture policy remain unchanged.
+- The wake self-check failed against the old matcher and passed after the change. It accepts case/outer-whitespace variants and rejects the former phrase, surrounding words, near matches, empty and null input. The existing PowerShell check now runs this self-check alongside command/language/playlist/destination checks; all passed.
+- Offline debug APK build passed using installed Android tools and a shared dependency cache, with checksum-verified SDK/model assets. Existing SDK XML, deprecation and native-symbol stripping warnings remain. This was not a fresh dependency-cache build.
+- No phone installation or diagnostic reset performed. Next verification: agree a signing-compatible installation that preserves the existing trial, then test intentional Hey Sally activation while locked/screen off, a command with audible playback, rejection of the old phrase and unwanted wakes during ordinary audio.

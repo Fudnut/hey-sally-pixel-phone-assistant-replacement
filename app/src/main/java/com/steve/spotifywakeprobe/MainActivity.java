@@ -226,15 +226,15 @@ public class MainActivity extends Activity {
         String lastAttempt = getSharedPreferences("probe", MODE_PRIVATE)
                 .getString("lastAttempt", "No system command attempt yet");
         status.setText((message.isEmpty() ? "" : message + "\n\n")
-                + "Wake phrase: Hey Spotify\nDefault assistant: " + assistant
+                + "Wake phrase: Hey Sally\nDefault assistant: " + assistant
                 + "\nSystem command recognition: "
                 + SpeechRecognizer.isRecognitionAvailable(this)
                 + "\nCommand language: " + commandLanguage()
                 + "\nLast wake: " + last + "\nLast command: " + lastCommand
                 + "\nLast attempt: " + lastAttempt
-                + "\n\nAfter setup, lock the phone, say 'Hey Spotify', wait for the beep, then say a command. "
+                + "\n\nAfter setup, lock the phone, say 'Hey Sally', wait for the beep, then say a command. "
                 + "Try 'pause', 'resume', 'next', 'previous', 'open Spotify', or 'play song/artist/playlist ...'."
-                + "\nSay 'list my playlists' to hear five numbered names. After the reply, use 'Hey Spotify' again, "
+                + "\nSay 'list my playlists' to hear five numbered names. After the reply, use 'Hey Sally' again, "
                 + "then 'play two' or 'more playlists'. Numbers expire three minutes after the last page. "
                 + "Wait until the spoken reply finishes before speaking.");
         history.setText("\nDiagnostic history (latest " + DiagnosticHistory.MAX_ENTRIES

@@ -216,7 +216,7 @@ public class WakeService extends Service {
             return;
         }
         recognizer = forCommand ? new Recognizer(model, 16000f)
-                : new Recognizer(model, 16000f, "[\"hey spotify\", \"[unk]\"]");
+                : new Recognizer(model, 16000f, "[\"hey sally\", \"[unk]\"]");
         RecognitionListener listener = new RecognitionListener() {
             @Override public void onPartialResult(String hypothesis) { heard(current, hypothesis, "partial", false); }
             @Override public void onResult(String hypothesis) { heard(current, hypothesis, "text", false); }
@@ -230,7 +230,7 @@ public class WakeService extends Service {
                     if (fallback != null && fallback.acceptsPartial()) {
                         try { executeCommand(fallback); } catch (IOException error) { fail(error); }
                     } else {
-                        recognitionFailed("I didn't catch that. Say Hey Spotify to try again.");
+                        recognitionFailed("I didn't catch that. Say Hey Sally to try again.");
                     }
                 }
             }
@@ -240,7 +240,7 @@ public class WakeService extends Service {
             wakeMicrophone.start(listener, () -> {
                 if (current != generation || destroyed) return;
                 listenReadyAt = SystemClock.elapsedRealtime();
-                update("Listening for Hey Spotify");
+                update("Listening for Hey Sally");
                 Log.i(TAG, "LISTENING_READY");
                 DiagnosticHistory.record(this, "LISTENING_READY");
             });
@@ -249,7 +249,7 @@ public class WakeService extends Service {
         speech = new SpeechService(recognizer, 16000f);
         speech.startListening(listener, 20000);
         commandReadyBeep();
-        update("Heard Hey Spotify; say a command");
+        update("Heard Hey Sally; say a command");
         Log.i(TAG, "COMMAND_READY");
         DiagnosticHistory.record(this, "COMMAND_READY VOSK");
     }
@@ -286,7 +286,7 @@ public class WakeService extends Service {
                 recordCommandTiming("ERROR");
                 String message = switch (error) {
                     case SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
-                            "I didn't catch that. Say Hey Spotify to try again.";
+                            "I didn't catch that. Say Hey Sally to try again.";
                     case SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT,
                             SpeechRecognizer.ERROR_SERVER, SpeechRecognizer.ERROR_SERVER_DISCONNECTED ->
                             "Speech recognition couldn't connect. Please try again.";
@@ -328,7 +328,7 @@ public class WakeService extends Service {
                                     ? radioNames : playlistNames);
                     else {
                         DiagnosticHistory.record(WakeService.this, "COMMAND_UNRECOGNIZED");
-                        recognitionFailed("I didn't understand that command. Say Hey Spotify to try again.");
+                        recognitionFailed("I didn't understand that command. Say Hey Sally to try again.");
                     }
                 } catch (IOException failed) { fail(failed); }
             }
@@ -367,11 +367,11 @@ public class WakeService extends Service {
             try {
                 if (fallback != null && fallback.acceptsPartial())
                     executeCommand(fallback);
-                else recognitionFailed("I didn't catch that. Say Hey Spotify to try again.");
+                else recognitionFailed("I didn't catch that. Say Hey Sally to try again.");
             } catch (IOException failed) { fail(failed); }
         };
         handler.postDelayed(deviceTimeout, 20000);
-        update("Heard Hey Spotify; say a command");
+        update("Heard Hey Sally; say a command");
         Log.i(TAG, "COMMAND_DEVICE_STARTED");
     }
 
@@ -405,7 +405,7 @@ public class WakeService extends Service {
                         executeCommand(fallback);
                     else {
                         DiagnosticHistory.record(this, "COMMAND_UNRECOGNIZED");
-                        recognitionFailed("I didn't understand that command. Say Hey Spotify to try again.");
+                        recognitionFailed("I didn't understand that command. Say Hey Sally to try again.");
                     }
                 }
                 return;
@@ -632,7 +632,7 @@ public class WakeService extends Service {
         stopReply();
         if (feedbackReply) {
             finishCommandFocus();
-            update("Listening for Hey Spotify");
+            update("Listening for Hey Sally");
         } else commandStatus(label, success ? "Spotify: playlist reply" : "Playlist reply failed");
         // Leave a short gap for speaker/Bluetooth audio to drain before reopening the microphone.
         handler.postDelayed(() -> {
@@ -663,7 +663,7 @@ public class WakeService extends Service {
         getSharedPreferences("probe", MODE_PRIVATE).edit()
                 .putString("lastCommand", Instant.now() + " " + status).apply();
         finishCommandFocus();
-        update(success ? "Listening for Hey Spotify" : "Command failed; open app");
+        update(success ? "Listening for Hey Sally" : "Command failed; open app");
     }
 
     private void finishCommandFocus() {

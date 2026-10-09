@@ -1,6 +1,6 @@
 # Spotify Wake Probe
 
-An experimental Android voice assistant for controlling the installed Spotify app with **Hey Spotify**. This is an independent project, not an official Spotify product.
+An experimental Android voice assistant for controlling the installed Spotify app with **Hey Sally**. This is an independent project, not an official Spotify product.
 
 Wake recognition runs locally with Vosk. After the ready beep, Android's configured speech recognizer captures one command. Spotify App Remote controls playback, and Spotify Web API resolves named music and saved playlists.
 
@@ -38,7 +38,7 @@ Install the debug APK using Android's normal developer tools. A build signed wit
 3. Enter your Developer Client ID in the app and tap **Save Client ID**. A Client ID is public configuration; never put a Client Secret in the Android app.
 4. Use **Authorize Spotify playback** and **Authorize named music and private playlists** while unlocked. The latter uses PKCE and requests private-playlist access.
 5. Grant microphone and notification permissions. Choose **Spotify Wake Probe** under Android Settings → Apps → Default apps → Digital assistant app. The app can open Default apps settings for you.
-6. Say **Hey Spotify**, wait for the ready beep, then speak a command. Use a fresh wake phrase for each command. After reboot, unlock once so the offline model is accessible.
+6. Say **Hey Sally**, wait for the ready beep, then speak a command. Use a fresh wake phrase for each command. After reboot, unlock once so the offline model is accessible.
 
 A public repository does not remove Spotify's API access restrictions. Development-mode apps require allowed users and have limited capacity; check the current [quota-mode documentation](https://developer.spotify.com/documentation/web-api/concepts/quota-modes). Others should configure their own Developer application rather than expect access through a shared personal registration.
 
