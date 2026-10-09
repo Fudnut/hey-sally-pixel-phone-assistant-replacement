@@ -2,6 +2,8 @@ package com.steve.spotifywakeprobe;
 
 public final class PlaylistBrowseCheck {
     public static void main(String[] args) {
+        for (String phrase : new String[]{"play number two please", "play number two.", "play number two please.", "play two please"})
+            command(phrase, "PLAY_NUMBER", "2");
         Throwable[] failures = {new SecurityException("private token/title"),
                 new java.net.SocketTimeoutException("private host"), new java.io.IOException("private URL"),
                 new java.util.NoSuchElementException("private playlist"), new RuntimeException("private SDK error")};
