@@ -47,14 +47,14 @@ public final class PlaylistBrowseCheck {
         special("play daily mix seven", "mix", "7");
         special("play daily mix", "mix", "");
         special("play daily mix nonsense", "mix", "");
-        special("play radio Fleetwood Mac", "radio", "fleetwood mac");
-        special("play Fleetwood Mac radio", "radio", "fleetwood mac");
-        special("play radio by Ocie Elliott", "radio", "ocie elliott");
+        special("play radio Example Group", "radio", "example group");
+        special("play Example Group radio", "radio", "example group");
+        special("play radio by Example Artist", "radio", "example artist");
         special("play radio", "radio", "");
         if (!SpecialDestination.matches(VoiceCommand.parse("play made for you two"), "Daily Mix 2")
                 || SpecialDestination.matches(VoiceCommand.parse("play made for you two"), "Daily Mix 20")
-                || !SpecialDestination.matches(VoiceCommand.parse("play radio Beyonce"), "Beyoncé Radio")
-                || SpecialDestination.matches(VoiceCommand.parse("play radio Sting"), "Interesting Radio")
+                || !SpecialDestination.matches(VoiceCommand.parse("play radio Cafe"), "Caf\u00e9 Radio")
+                || SpecialDestination.matches(VoiceCommand.parse("play radio Example Artist"), "Unrelated Radio")
                 || SpecialDestination.matches(VoiceCommand.parse("play liked songs"), "My Liked Songs Copy")
                 || SpecialDestination.matches(VoiceCommand.parse("play DJ"), "Best DJ Songs"))
             throw new AssertionError("Special content must match the exact destination, not a fuzzy song result");
@@ -62,16 +62,13 @@ public final class PlaylistBrowseCheck {
                 || SpecialDestination.invalid(VoiceCommand.parse("play radio")) == null
                 || SpecialDestination.invalid(VoiceCommand.parse("play made for you six")) != null)
             throw new AssertionError("Bad special arguments need a spoken correction");
-        for (String artist : new String[]{"Ocie Elliot", "Ocie Elliott", "Aussie Elliott", "Ossie Elliot"})
-            if (!SpecialDestination.matches(VoiceCommand.parse("play radio " + artist), "Ocie Elliott Radio"))
-                throw new AssertionError("Radio should reuse the known Ocie Elliott dictation variants");
         VoiceCommand unclearRadio = VoiceCommand.parse("play radio unrelated primary");
-        java.util.List<String> radioAlternatives = java.util.List.of("Sting", "Ocie Elliott");
-        if (SpecialDestination.matchRank(unclearRadio, "Ocie Elliott Radio", radioAlternatives) != 2
-                || SpecialDestination.matchRank(unclearRadio, "Sting Radio", radioAlternatives) != 1
+        java.util.List<String> radioAlternatives = java.util.List.of("Example Artist", "Example Band");
+        if (SpecialDestination.matchRank(unclearRadio, "Example Band Radio", radioAlternatives) != 2
+                || SpecialDestination.matchRank(unclearRadio, "Example Artist Radio", radioAlternatives) != 1
                 || SpecialDestination.matchRank(unclearRadio, "Unrelated Primary Radio", radioAlternatives) != 0
-                || SpecialDestination.matchRank(unclearRadio, "Interesting Radio", radioAlternatives) != Integer.MAX_VALUE
-                || SpecialDestination.matchRank(VoiceCommand.parse("play DJ"), "Sting Radio", radioAlternatives) != Integer.MAX_VALUE)
+                || SpecialDestination.matchRank(unclearRadio, "Unrelated Radio", radioAlternatives) != Integer.MAX_VALUE
+                || SpecialDestination.matchRank(VoiceCommand.parse("play DJ"), "Example Artist Radio", radioAlternatives) != Integer.MAX_VALUE)
             throw new AssertionError("Radio alternatives need ranked exact matching with primary priority and no cross-command fallback");
         SpecialDestination.Matches<String> radioChoices = new SpecialDestination.Matches<>();
         radioChoices.add("native-uri", "native item", 2, false);
@@ -90,9 +87,9 @@ public final class PlaylistBrowseCheck {
         nativeFallback.add("different-uri", "equally likely item", 1, true);
         if (nativeFallback.size() != 2) throw new AssertionError("Equal-rank distinct playlists must remain ambiguous");
         command("play song DJ", "PLAY", "dj");
-        command("play artist Radiohead", "PLAY", "radiohead");
+        command("play artist Radioband", "PLAY", "radioband");
         command("play playlist Liked Songs", "PLAY", "liked songs");
-        if (VoiceCommand.parse("play song by the beatles") != null)
+        if (VoiceCommand.parse("play song by example band") != null)
             throw new AssertionError("Missing song title must still be rejected");
         if (VoiceCommand.parse("play two").acceptsPartial())
             throw new AssertionError("Number selection must wait for a final transcript");

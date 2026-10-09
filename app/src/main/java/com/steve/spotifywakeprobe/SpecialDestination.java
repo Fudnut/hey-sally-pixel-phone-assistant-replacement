@@ -76,7 +76,6 @@ final class SpecialDestination {
         String name = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}", "")
                 .toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N} ]", "")
                 .trim().replaceAll("\\s+", " ");
-        // Same observed artist-name variants as named playlist/artist playback; no fuzzy station search.
-        return name.replaceFirst("^(ocie|ociie|occie|oc|aussie|ozzy|ozzie|ossie) elliot+t?( radio)?$", "occie elliot$2");
+        return name;
     }
 }

@@ -349,11 +349,10 @@ public class WakeService extends Service {
                 .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
                 .putStringArrayListExtra(RecognizerIntent.EXTRA_BIASING_STRINGS,
                         new ArrayList<>(java.util.List.of("play playlist", "play my playlist",
-                                "play playlist Occie Elliot", "play Occie Elliot",
                                 "play next song", "pause", "resume", "previous song",
                                 "list my playlists", "more playlists", "play number two",
                                 "play liked songs", "play local files", "play DJ", "play Daily Mix one",
-                                "play Made For You two", "play radio", "play radio Ocie Elliott")))
+                                "play Made For You two", "play radio")))
                 .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         deviceCommand.startListening(command);
         deviceTimeout = () -> {

@@ -214,8 +214,7 @@ final class SpotifyController {
             if (!names.contains(command.query)) names.add(command.query);
             return libraryPlaylist(token, names);
         }
-        String recognizedName = normalizedName(command.query).equals("occie elliot")
-                ? "Ocie Elliott" : command.query;
+        String recognizedName = command.query;
         if ("artist".equals(command.type)) return artistTrack(token, recognizedName);
         if (!"song".equals(command.type)) {
             String artist = exactArtist(token, recognizedName);
@@ -330,9 +329,6 @@ final class SpotifyController {
     private static String normalizedName(String name) {
         String value = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", "")
                 .trim().replaceAll("\\s+", " ");
-        // Observed Pixel on-device transcripts for the user's playlist/artist name.
-        if (value.matches("(ocie|ociie|occie|oc|aussie|ozzy|ozzie|ossie) elliot+t?"))
-            return "occie elliot";
         return value;
     }
 
