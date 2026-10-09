@@ -93,6 +93,24 @@ public final class PlaylistBrowseCheck {
             throw new AssertionError("Missing song title must still be rejected");
         if (VoiceCommand.parse("play two").acceptsPartial())
             throw new AssertionError("Number selection must wait for a final transcript");
+        PlaylistBrowse numericBrowse = new PlaylistBrowse();
+        for (String title : new String[]{"one", "seven", "ten", "2"}) {
+            VoiceCommand song = VoiceCommand.parse("play " + title)
+                    .forPlaylistContext(numericBrowse.isActive(100));
+            if (song.kind != VoiceCommand.Kind.PLAY || !song.type.equals("auto") || !song.query.equals(title))
+                throw new AssertionError("Without playlist browsing a numeric title must search using the spoken words");
+        }
+        numericBrowse.replace(java.util.List.of(new PlaylistBrowse.Entry("Example", "uri1"),
+                new PlaylistBrowse.Entry("Other", "uri2")), 100);
+        numericBrowse.nextPage(101);
+        VoiceCommand selection = VoiceCommand.parse("play two").forPlaylistContext(numericBrowse.isActive(102));
+        if (selection.kind != VoiceCommand.Kind.PLAY_NUMBER
+                || !numericBrowse.select(Integer.parseInt(selection.query), 102).uri.equals("uri2"))
+            throw new AssertionError("Active playlist browsing must keep numbered selection");
+        VoiceCommand expired = VoiceCommand.parse("play two")
+                .forPlaylistContext(numericBrowse.isActive(100 + PlaylistBrowse.EXPIRY_MS));
+        if (expired.kind != VoiceCommand.Kind.PLAY || !expired.query.equals("two"))
+            throw new AssertionError("Expired browse numbers no longer select a playlist");
         session();
         for (String region : new String[]{"US", "AU", "GB", "NZ"}) {
             java.util.Locale phone = java.util.Locale.forLanguageTag("en-" + region);

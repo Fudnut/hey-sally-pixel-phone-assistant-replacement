@@ -451,6 +451,7 @@ public class WakeService extends Service {
     }
 
     private void executeCommand(VoiceCommand command, List<String> playlistNames) throws IOException {
+        command = command.forPlaylistContext(playlists.isActive(SystemClock.elapsedRealtime()));
         int request = ++commandSequence;
         if (focusLimit != null) { handler.removeCallbacks(focusLimit); focusLimit = null; }
         String commandLabel = command.kind + (command.kind == VoiceCommand.Kind.PLAY || command.kind == VoiceCommand.Kind.PLAY_SPECIAL

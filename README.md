@@ -62,14 +62,14 @@ A public repository does not remove Spotify's API access restrictions. Developme
 | Play playlist followed by its name | Match a saved playlist |
 | List my playlists | Read five playlist names with numbers |
 | More playlists | Read the next page |
-| Play two / Play number two | Select a number already read aloud |
+| Play two / Play number two | Select a number already read aloud while playlist browsing is active |
 | Play Liked Songs | Play the collection if Spotify exposes it |
 | Play DJ | Play Spotify DJ if available to your account |
 | Play Daily Mix two / Play Made For You 02 | Request Daily Mix 2; supported numbers are 1–6 |
 | Play radio followed by an artist | Match a recommended or saved Radio playlist |
 | Play Local Files | Use a native collection if exposed, otherwise a saved playlist named Local Files |
 
-Playlist numbering expires three minutes after the last successful readout. Names are matched within a bounded lookup, so not every available Spotify collection is guaranteed to be found.
+Playlist numbering expires three minutes after the last successful readout. Outside an active browse, `play one` searches for the song named One; use `play song one` to request it while browsing. Names are matched within a bounded lookup, so not every available Spotify collection is guaranteed to be found.
 
 Radio cannot generate any artist's station on demand. If a station is absent from recommendations, open the artist in Spotify, choose **Go to Radio**, and save the station before retrying the voice command. The save-and-retry workflow has passed a device test.
 

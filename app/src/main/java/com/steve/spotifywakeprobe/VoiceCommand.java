@@ -7,8 +7,14 @@ final class VoiceCommand {
     final Kind kind;
     final String query;
     final String type;
+    private final String spokenQuery;
 
     private VoiceCommand(Kind kind, String query, String type) {
+        this(kind, query, type, query);
+    }
+
+    private VoiceCommand(Kind kind, String query, String type, String spokenQuery) {
+        this.spokenQuery = spokenQuery;
         this.kind = kind;
         this.query = query;
         this.type = type;
@@ -49,11 +55,16 @@ final class VoiceCommand {
             VoiceCommand special = special(query);
             if (special != null) return special;
             Integer number = spokenNumber(query.startsWith("number ") ? query.substring(7) : query);
-            if (number != null) return new VoiceCommand(Kind.PLAY_NUMBER, number.toString(), "");
+            if (number != null) return new VoiceCommand(Kind.PLAY_NUMBER, number.toString(), "", query);
             if (query.startsWith("number ")) return null;
         }
         if (query.isEmpty() || (("song".equals(type) || "auto".equals(type)) && query.startsWith("by "))) return null;
         return new VoiceCommand(Kind.PLAY, query, type);
+    }
+
+    VoiceCommand forPlaylistContext(boolean browseActive) {
+        return kind == Kind.PLAY_NUMBER && !browseActive
+                ? new VoiceCommand(Kind.PLAY, spokenQuery, "auto") : this;
     }
 
     static VoiceCommand selectedPlaylist() { return new VoiceCommand(Kind.PLAY, "", "playlist"); }

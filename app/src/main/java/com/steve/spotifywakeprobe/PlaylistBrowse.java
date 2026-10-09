@@ -48,8 +48,10 @@ final class PlaylistBrowse {
     void readCompleted(long now) { if (expiresAt != 0) expiresAt = now + EXPIRY_MS; }
     void clear() { entries = List.of(); shown = 0; expiresAt = 0; }
 
+    boolean isActive(long now) { return expiresAt != 0 && now < expiresAt; }
+
     private void requireActive(long now) {
-        if (expiresAt == 0 || now >= expiresAt) {
+        if (!isActive(now)) {
             clear();
             throw new IllegalStateException("Please say list my playlists first. Playlist numbers expire after three minutes.");
         }
