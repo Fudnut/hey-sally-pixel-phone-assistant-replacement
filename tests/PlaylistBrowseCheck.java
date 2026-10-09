@@ -133,6 +133,17 @@ public final class PlaylistBrowseCheck {
             if (song.kind != VoiceCommand.Kind.PLAY || !song.type.equals("auto") || !song.query.equals(title))
                 throw new AssertionError("Without playlist browsing a numeric title must search using the spoken words");
         }
+        for (String phrase : new String[]{"play number two", "play number 2"}) {
+            VoiceCommand explicit = VoiceCommand.parse(phrase).forPlaylistContext(numericBrowse.isActive(100));
+            if (explicit.kind != VoiceCommand.Kind.PLAY_NUMBER || !explicit.query.equals("2"))
+                throw new AssertionError("Explicit number requests must retain playlist intent without a browse");
+            try {
+                numericBrowse.select(Integer.parseInt(explicit.query), 100);
+                throw new AssertionError("Explicit selection without a browse must request a list first");
+            } catch (IllegalStateException expected) {
+                if (!expected.getMessage().contains("list my playlists first")) throw expected;
+            }
+        }
         numericBrowse.replace(java.util.List.of(new PlaylistBrowse.Entry("Example", "uri1"),
                 new PlaylistBrowse.Entry("Other", "uri2")), 100);
         numericBrowse.nextPage(101);
@@ -144,6 +155,10 @@ public final class PlaylistBrowseCheck {
                 .forPlaylistContext(numericBrowse.isActive(100 + PlaylistBrowse.EXPIRY_MS));
         if (expired.kind != VoiceCommand.Kind.PLAY || !expired.query.equals("two"))
             throw new AssertionError("Expired browse numbers no longer select a playlist");
+        VoiceCommand explicitExpired = VoiceCommand.parse("play number two")
+                .forPlaylistContext(numericBrowse.isActive(100 + PlaylistBrowse.EXPIRY_MS));
+        if (explicitExpired.kind != VoiceCommand.Kind.PLAY_NUMBER)
+            throw new AssertionError("Explicit selection must retain playlist intent after expiry");
         session();
         for (String region : new String[]{"US", "AU", "GB", "NZ"}) {
             java.util.Locale phone = java.util.Locale.forLanguageTag("en-" + region);

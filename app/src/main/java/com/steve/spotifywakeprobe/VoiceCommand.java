@@ -65,7 +65,7 @@ final class VoiceCommand {
     }
 
     VoiceCommand forPlaylistContext(boolean browseActive) {
-        return kind == Kind.PLAY_NUMBER && !browseActive
+        return kind == Kind.PLAY_NUMBER && !browseActive && !spokenQuery.startsWith("number ")
                 ? new VoiceCommand(Kind.PLAY, spokenQuery, "auto") : this;
     }
 

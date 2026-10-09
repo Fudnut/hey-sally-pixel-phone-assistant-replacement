@@ -115,7 +115,7 @@ The table describes the current alpha.2 source. The published alpha.1 APK uses t
 | General music request | **Hey Sally** → **wait for beep** → `play <name>` | None | Special destinations and numbers in an active playlist browse are checked first; otherwise tries an exact artist match, then a track search. Prefer explicit song/artist/playlist wording. |
 | List saved playlists | **Hey Sally** → **wait for beep** → `list my playlists` | `list playlists`; singular `playlist`, split `play lists`/`play list`, punctuation and optional `please` are accepted | Reads five numbered names. Regular library playlists only; Liked Songs is a separate command. |
 | Next playlist page | **Hey Sally** → **wait for beep** → `more playlists` | Singular/split playlist wording, punctuation and optional `please` | Reads the next five names with continuing numbers. `next` still means next track. |
-| Choose announced playlist | **Hey Sally** → **wait for beep** → `play two` | `play number two`, `play 2`, `play number 2`; use another announced number | With an active browse, selects only a number already read from the current playlist snapshot. Without an active browse, searches the spoken title (for example, One). |
+| Choose announced playlist | **Hey Sally** → **wait for beep** → `play two` | `play number two`, `play 2`, `play number 2`; use another announced number | With an active browse, selects only a number already read from the current playlist snapshot. Without an active browse, bare `play two`/`play 2` searches the title. Explicit `play number two`/`play number 2` always means playlist selection and asks for a fresh list. |
 | Liked Songs | **Hey Sally** → **wait for beep** → `play Liked Songs` | `play my Liked Songs` | Plays Spotify's exposed collection if available. |
 | Spotify DJ | **Hey Sally** → **wait for beep** → `play DJ` | `play D J`, `play Spotify DJ`, `play the DJ` | Requests the actual DJ experience if exposed for the account. |
 | Daily Mix | **Hey Sally** → **wait for beep** → `play Daily Mix two` | `play Made For You two`, `play Daily Mix 2`, `play Made For You 02`; optional `number`, `zero` or `oh` before a valid number | Numbers 1–6 only. Made For You means Daily Mix here, not every personalized Spotify collection. |
@@ -131,7 +131,7 @@ The parser also tolerates the observed fallback transcripts `regime` and `review
 3. **Hey Sally** → beep → **play two** selects the second announced playlist.
 4. Or **Hey Sally** → beep → **more playlists** announces the next page, numbered 6–10.
 
-The snapshot expires three minutes after the last successful page finishes speaking. Only announced numbers can be selected while the snapshot is active. Without an active snapshot, numeric requests search the spoken song title; `play song one` always searches even while browsing. A new list request replaces the snapshot; service restart/app update clears it. Start another list if it has expired. Listing currently reads at most 1,000 regular library playlists.
+The snapshot expires three minutes after the last successful page finishes speaking. Only announced numbers can be selected while the snapshot is active. Without an active snapshot, bare numeric requests search the song title; explicit `play number two` asks for a fresh list. `play song one` always searches even while browsing. A new list request replaces the snapshot; service restart/app update clears it. Start another list if it has expired. Listing currently reads at most 1,000 regular library playlists.
 
 ### Radio and Local Files preparation
 

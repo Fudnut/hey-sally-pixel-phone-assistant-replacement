@@ -73,7 +73,7 @@ The downloadable GitHub APK is still alpha.1. The main branch prepares alpha.2: 
 
 Controls accept filler words such as `please`, `the` and `music`: for example, `pause the music`, `skip this song` and `play the next song`. Named song, artist and playlist requests retain their titles.
 
-Playlist numbering expires three minutes after the last successful readout. Outside an active browse, `play one` searches for the song named One; use `play song one` to request it while browsing. Names are matched within a bounded lookup, so not every available Spotify collection is guaranteed to be found.
+Playlist numbering expires three minutes after the last successful readout. `play number two` always means playlist selection and asks for a fresh list when none is active. Outside an active browse, bare `play one` or `play 1` searches for a numeric song title; use `play song one` to request it while browsing. Names are matched within a bounded lookup, so not every available Spotify collection is guaranteed to be found.
 
 Radio cannot generate any artist's station on demand. If a station is absent from recommendations, open the artist in Spotify, choose **Go to Radio**, and save the station before retrying the voice command. The save-and-retry workflow has passed a device test.
 
