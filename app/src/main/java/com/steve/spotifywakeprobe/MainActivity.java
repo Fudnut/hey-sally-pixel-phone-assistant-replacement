@@ -2,6 +2,7 @@ package com.steve.spotifywakeprobe;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -9,6 +10,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Build;
 import android.provider.Settings;
 import android.speech.SpeechRecognizer;
 import android.speech.RecognizerIntent;
@@ -180,10 +182,20 @@ public class MainActivity extends Activity {
     }
 
     private void startProbe() {
-        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS);
+        java.util.ArrayList<String> missing = new java.util.ArrayList<>();
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
+            missing.add(Manifest.permission.RECORD_AUDIO);
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+            missing.add(Manifest.permission.POST_NOTIFICATIONS);
+        if (!missing.isEmpty()) {
+            requestPermissions(missing.toArray(new String[0]), PERMISSIONS);
             return;
         }
+        startProbeService();
+    }
+
+    private void startProbeService() {
         startForegroundService(new Intent(this, WakeService.class));
         refresh();
     }
@@ -206,7 +218,9 @@ public class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
-        if (code == PERMISSIONS && results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) startProbe();
+        if (code == PERMISSIONS
+                && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+            startProbeService();
         else refresh();
     }
 
@@ -230,6 +244,8 @@ public class MainActivity extends Activity {
                 + "\nSystem command recognition: "
                 + SpeechRecognizer.isRecognitionAvailable(this)
                 + "\nCommand language: " + commandLanguage()
+                + (getSystemService(NotificationManager.class).areNotificationsEnabled()
+                        ? "" : "\nNotifications disabled: enable them in Android app settings for listener status and failure alerts.")
                 + "\nLast wake: " + last + "\nLast command: " + lastCommand
                 + "\nLast attempt: " + lastAttempt
                 + "\n\nAfter setup, lock the phone, say 'Hey Sally', wait for the beep, then say a command. "
