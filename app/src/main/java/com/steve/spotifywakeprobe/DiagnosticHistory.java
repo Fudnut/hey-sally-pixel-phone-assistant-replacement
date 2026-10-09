@@ -2,6 +2,7 @@ package com.steve.spotifywakeprobe;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.SystemClock;
 
 import java.time.Instant;
 
@@ -9,6 +10,7 @@ final class DiagnosticHistory {
     static final int MAX_ENTRIES = 1024;
     private static final String PREFS = "diagnostics";
     private static final String KEY = "events";
+    private static final WakeResults WAKE_RESULTS = new WakeResults(SystemClock.elapsedRealtime());
 
     private DiagnosticHistory() { }
 
@@ -26,7 +28,21 @@ final class DiagnosticHistory {
         prefs.edit().putString(KEY, append(current, Instant.now() + " " + event)).apply();
     }
 
+    static synchronized String recordWakeResult(Context context, String words, long audioMs) {
+        String event = WAKE_RESULTS.result(words, audioMs);
+        if (event != null) record(context, event);
+        return event;
+    }
+
+    static synchronized void flushWakeResults(Context context) {
+        String event = WAKE_RESULTS.drain(SystemClock.elapsedRealtime());
+        if (event != null) record(context, event);
+    }
+
+    static synchronized void resetWakeResults() { WAKE_RESULTS.reset(SystemClock.elapsedRealtime()); }
+
     static synchronized void startTrial(Context context) {
+        resetWakeResults();
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                 .putString(KEY, Instant.now() + " TRIAL_START\n").apply();
     }

@@ -2,6 +2,25 @@ package com.steve.spotifywakeprobe;
 
 public final class PlaylistBrowseCheck {
     public static void main(String[] args) {
+        WakeResults wakes = new WakeResults(100);
+        for (int i = 0; i < 10000; i++) {
+            if (wakes.result("private nearby speech", 200) != null || wakes.result("", 200) != null)
+                throw new AssertionError("Routine results must not emit per-result events");
+        }
+        if (!"WAKE_RESULT class=accepted ms=600".equals(wakes.result("Hey Sally", 600)))
+            throw new AssertionError("Accepted wake must still emit immediately");
+        if (!"WAKE_RESULTS_SUMMARY other=10000 empty=10000 ms=300000".equals(wakes.drain(300100)))
+            throw new AssertionError("Noise burst must become one non-content summary with counts");
+        if (wakes.drain(600100) != null)
+            throw new AssertionError("Empty windows must not consume diagnostic history");
+        wakes.result("earlier private speech", 500);
+        wakes.reset(600200);
+        if (wakes.drain(600300) != null)
+            throw new AssertionError("Fresh trial must discard earlier aggregated results");
+        wakes.result("", 200);
+        if (!"WAKE_RESULTS_SUMMARY other=0 empty=1 ms=200".equals(wakes.drain(600500)))
+            throw new AssertionError("A partial final window must retain its actual duration");
+
         command("list my playlists", "LIST_PLAYLISTS", "");
         command("list playlists", "LIST_PLAYLISTS", "");
         command("list my play lists", "LIST_PLAYLISTS", "");

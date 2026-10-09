@@ -42,6 +42,7 @@ public class WakeService extends Service {
     private static final String TAG = "SpotifyWakeProbe";
     private static final int NOTIFICATION_ID = 1;
     private static final int ERROR_NOTIFICATION_ID = 2;
+    private static final long WAKE_SUMMARY_INTERVAL_MS = 5 * 60 * 1000L;
     private static final long HEARTBEAT_INTERVAL_MS = 30 * 60 * 1000L;
     private SpeechService speech;
     private WakeMicrophone wakeMicrophone;
@@ -80,6 +81,13 @@ public class WakeService extends Service {
     private Thread playlistFetch;
     private Runnable cancelSpecialPlayback;
     private boolean specialPlaybackDispatched;
+    private final Runnable wakeSummary = new Runnable() {
+        @Override public void run() {
+            if (destroyed) return;
+            DiagnosticHistory.flushWakeResults(WakeService.this);
+            handler.postDelayed(this, WAKE_SUMMARY_INTERVAL_MS);
+        }
+    };
     private final Runnable heartbeat = new Runnable() {
         @Override public void run() {
             if (destroyed) return;
@@ -105,8 +113,10 @@ public class WakeService extends Service {
         getSystemService(NotificationManager.class).cancel(ERROR_NOTIFICATION_ID);
         if (!historyStarted) {
             historyStarted = true;
+            DiagnosticHistory.resetWakeResults();
             DiagnosticHistory.record(this, "SERVICE_START");
             handler.postDelayed(heartbeat, HEARTBEAT_INTERVAL_MS);
+            handler.postDelayed(wakeSummary, WAKE_SUMMARY_INTERVAL_MS);
         }
         if (!loading && speech == null && model == null) {
             loading = true;
@@ -411,10 +421,8 @@ public class WakeService extends Service {
             }
             if ("partial".equals(key)) return;
             boolean matched = WakePhrase.matches(words);
-            String resultClass = matched ? "accepted" : words.trim().isEmpty() ? "empty" : "other";
-            String resultEvent = "WAKE_RESULT class=" + resultClass + " ms=" + wakeMicrophone.resultAudioMs();
-            Log.i(TAG, resultEvent);
-            DiagnosticHistory.record(this, resultEvent);
+            String resultEvent = DiagnosticHistory.recordWakeResult(this, words, wakeMicrophone.resultAudioMs());
+            if (resultEvent != null) Log.i(TAG, resultEvent);
             if (!matched) return;
             if (System.currentTimeMillis() - lastWake < 5000) {
                 Log.i(TAG, "WAKE_IGNORED_DEBOUNCE");
@@ -720,6 +728,8 @@ public class WakeService extends Service {
     @Override public void onDestroy() {
         destroyed = true;
         handler.removeCallbacks(heartbeat);
+        handler.removeCallbacks(wakeSummary);
+        DiagnosticHistory.flushWakeResults(this);
         if (retry != null) handler.removeCallbacks(retry);
         DiagnosticHistory.record(this, "SERVICE_STOP");
         commandSequence++;

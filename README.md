@@ -91,7 +91,7 @@ Wake capture requests Android's privacy-sensitive microphone mode to reduce inte
 - After waking, command audio may be processed online by the configured Android speech service, such as Google Speech Services. Provider behavior is outside this app's control.
 - Named music queries and Spotify authorization requests go to Spotify. No Gemini integration or project-operated backend is used.
 - OAuth tokens are stored encrypted using Android Keystore. Android backup and device transfer are disabled for app data.
-- Up to 1,024 diagnostic events remain in app-private storage. They contain timestamps, command categories, counts and outcomes, not playlist names, Spotify URIs or recognized words. Timing and lock/screen states may still reveal usage patterns.
+- Up to 1,024 diagnostic events remain in app-private storage. They contain timestamps, command categories, counts and outcomes, not playlist names, Spotify URIs or recognized words. Routine non-matching wake results are counted in five-minute summaries, which may be delayed by Android sleep; a partial summary is saved when the service stops. These counts may reveal nearby speech/noise activity. Accepted wakes, debounce rejections, timing and lock/screen states still reveal usage patterns.
 - **Copy diagnostic history** puts that history on the clipboard for voluntary sharing. Review it before posting publicly. **Start fresh diagnostic trial** clears the previous timeline; copy it first if needed. Clearing app storage or uninstalling deletes it.
 
 ## Limitations and verification
