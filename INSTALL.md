@@ -48,6 +48,8 @@ Do this while stationary and unlocked.
 4. Choose your **Command language** (US/Australian/UK/New Zealand English, or the phone's English language). It applies on the next wake and does not change the local US-English wake model.
 5. Check that status/notification says **Listening for Hey Sally**.
 
+Alpha.2 requests microphone and notification permissions together when needed. Denying notifications does not prevent startup if microphone permission is granted; status warns when notifications are disabled. Denying the microphone prevents capture. This revised first-run/denial flow still needs testing on the exact release APK.
+
 The microphone indicator stays visible because hands-free wake uses continuous local microphone processing. Stop the listener when another recording app needs the microphone. After reboot, unlock once before testing. If setup controls overlap system bars, scroll the button into the middle of the screen.
 
 ## 4. Use it

@@ -89,7 +89,7 @@ Made For You means Daily Mix 1–6 here. Native Local Files was not exposed on t
 
 ## Speech and audio
 
-The command-language selector supports US, Australian, UK and New Zealand English, or the phone's English locale. It does not automatically detect an accent. The offline wake/fallback model remains US English. Replies use Android's default text-to-speech voice and media audio volume/output. Car-speaker routing has passed a short test; device-specific behavior remains possible.
+The command-language selector supports US, Australian, UK and New Zealand English, or the phone's English locale. It does not automatically detect an accent. The offline wake model remains US English. Vosk captures a command only when no Android recognition service is available; an available service that fails does not automatically fall back to Vosk. Offline command recognition is not guaranteed. Replies use Android's default text-to-speech voice and media audio volume/output. Car-speaker routing has passed a short test; device-specific behavior remains possible.
 
 Wake capture requests Android's privacy-sensitive microphone mode to reduce interference from other background recorders. This can prevent background song identification or other recording features while listening. Stop the listener when another recording app needs the microphone. Call/camera/recorder coexistence is not fully validated.
 
@@ -97,6 +97,7 @@ Wake capture requests Android's privacy-sensitive microphone mode to reduce inte
 
 - The wake recognizer processes microphone audio locally. App-owned code does not save audio recordings or command transcripts.
 - After waking, command audio may be processed online by the configured Android speech service, such as Google Speech Services. Provider behavior is outside this app's control.
+- Spoken playlist names go to the configured text-to-speech engine, whose voice may use network processing.
 - Named music queries and Spotify authorization requests go to Spotify. No Gemini integration or project-operated backend is used.
 - OAuth tokens are stored encrypted using Android Keystore. Android backup and device transfer are disabled for app data.
 - Up to 1,024 diagnostic events remain in app-private storage. They contain timestamps, command categories, counts and outcomes, not playlist names, Spotify URIs or recognized words. Routine non-matching wake results are counted in five-minute summaries, which may be delayed by Android sleep; a partial summary is saved when the service stops. These counts may reveal nearby speech/noise activity. Accepted wakes, debounce rejections, timing and lock/screen states still reveal usage patterns.
@@ -125,24 +126,24 @@ Google Assistant runs as a system component with access that ordinary apps do no
 | --- | --- |
 | Listens with the screen off at very low battery cost | Android's low-power hotword path needs a privileged permission held by system apps. Hey Sally listens continuously on the phone's processor from a foreground service, which costs more battery and shows a permanent microphone indicator. |
 | Recognises who is speaking (Voice Match) and gives personal results | Tied to a Google account and Google's models. Hey Sally responds to anyone who says the phrase, including on a locked phone. |
-| Acts inside other apps ("message Sam on WhatsApp") | Android's structured app-integration permission goes only to system apps. The alternative, an accessibility service, is restricted for sideloaded apps and sensitive under Google's policies. Not planned. |
-| Reads Gmail, Photos, Drive and other Google account data | Needs Google's OAuth app verification and, for public apps, a security assessment. Not planned. |
+| Acts inside other apps ("message Sam on WhatsApp") | Not implemented here. Android distinguishes assistant-role app actions from app functions: `EXECUTE_APP_FUNCTIONS` is a normal permission, with execution controlled by a runtime allowlist. It does not grant arbitrary access inside apps. See [Android's permission reference](https://developer.android.com/reference/android/Manifest.permission#EXECUTE_APP_FUNCTIONS). Accessibility also has installation and policy restrictions. |
+| Reads Gmail, Photos, Drive and other Google account data | Needs the relevant Google APIs, user consent and applicable OAuth verification. A security assessment applies to certain restricted-scope uses involving server storage/transmission, with exceptions; it is not mandatory for every public app. See [Google's requirements](https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification). Not planned. |
 | Call Screen, Hold for Me, Direct My Call | Pixel and Google phone features that need call audio, which Android does not give ordinary apps. |
-| Voice in Android Auto or a car's own assistant button | Closed platform; no route for third-party assistants is known. Hey Sally uses the phone's microphone, not the car's. |
+| Voice in Android Auto or a car's own assistant button | Not integrated or tested here. Android Automotive OS documents third-party voice-interaction services, which is distinct from phone-projected Android Auto and does not prove support for a car's assistant button. See [AOSP's guide](https://source.android.com/docs/automotive/voice/voice_interaction_guide/app_development). Hey Sally uses the phone's microphone. |
 | Runs Assistant Routines and Google Home devices | Other apps cannot start or edit Routines. Smart-home control through Google's Home APIs with user consent is possible in principle but not planned. |
 | Switches Wi-Fi, Bluetooth or airplane mode directly | Android removed direct toggles for ordinary apps; an app can only open the settings screen. Torch, volume and, with a user grant, do-not-disturb are possible. |
 | Answers open-ended questions and holds a conversation | Needs a large model, either a paid cloud service or a heavy on-device one. Neither is integrated. |
 | Proactive suggestions | Not built and not planned. |
 
-**Regulation.** In July 2026 the European Commission adopted a decision under the Digital Markets Act requiring Google to open several Android features to rival AI assistants in the EU, including always-on hotword detection and system integration. Deadlines run from 2027 to 2028, some features depend on a Google certification scheme, and no commitment to apply any of it outside the EU has been found. This project does not depend on it.
+**Regulation.** In July 2026 the European Commission adopted a decision under the Digital Markets Act requiring Google to open several Android features to rival AI assistants in the EU, including always-on hotword detection and system integration. The [Commission's decision](https://digital-markets-act.ec.europa.eu/businesses-portal/interoperability/alphabet-specification-proceedings-interoperability-ai-services_en) sets Android 18/19 implementation deadlines of 1 August 2027/2028; some features depend on a Google certification scheme. This is an EU measure, not evidence of present worldwide availability. This project does not depend on it.
 
-**Installing outside Google Play.** Google is introducing developer verification for apps on certified Android devices, enforced from 30 September 2026 in Brazil, Indonesia, Singapore and Thailand and worldwide during 2027. Unregistered apps can still be installed through an advanced flow, and the ADB workflow is unchanged, but installing a public APK may become harder.
+**Installing outside Google Play.** Google is introducing developer verification for apps on certified Android devices, with initial enforcement in participating app stores from 30 September 2026 in Brazil, Indonesia, Singapore and Thailand, followed by phased global rollout starting in 2027. See [Android's verification timeline](https://developer.android.com/developer-verification). Unregistered apps can still be installed through an advanced flow, and the ADB workflow is unchanged, but installing a public APK may become harder.
 
 ## Limitations and verification
 
 Short device checks have demonstrated locked-screen wake, basic controls, named music, playlist readout/numbered selection, several special collections and cable-free operation. They do not establish a success rate, battery-life figure, all-day reliability or support across Android devices. Playback callbacks alone do not prove audible output.
 
-The focused Java checks cover command parsing, regional settings, playlist paging/expiry and destination matching. They do not simulate Android audio focus, microphone priority, Spotify availability or actual car-speaker output.
+The focused Java checks cover command parsing, regional settings, playlist paging/expiry and destination matching. A separate local controller harness checks cancellation, completion deadlines, sanitized setup failures and Unicode matching. They do not simulate Android audio focus, microphone priority, Spotify availability or actual car-speaker output.
 
 ## Licence
 

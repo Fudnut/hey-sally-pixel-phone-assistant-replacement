@@ -110,7 +110,7 @@ The table describes the current alpha.2 source. The published alpha.1 APK uses t
 | Next track | **Hey Sally** → **wait for beep** → `next song` | `next`, `next track`, `play next song`, `play next track`, `play the next song`, `skip`, `skip this song`, `next song please` | Skips the track; does not explicitly start paused playback. Use resume first. |
 | Previous track | **Hey Sally** → **wait for beep** → `previous song` | `previous`, `previous track`, `play previous song`, `play previous track`, `play the previous song`, `play the previous track` | Requests the preceding track, accounting for Spotify's restart-current-track behavior after three seconds. Does not explicitly resume paused playback. |
 | Named song | **Hey Sally** → **wait for beep** → `play song <title>` | `play the song <title>`; e.g. `play song Yesterday by The Beatles` | Searches for a song. Explicit song wording also handles a numeric title or a title that looks like a special command. |
-| Named artist | **Hey Sally** → **wait for beep** → `play artist <artist>` | None | Resolves the named artist and starts playback. |
+| Named artist | **Hey Sally** → **wait for beep** → `play artist <artist>` | None | Starts one randomly selected track from up to ten search results whose artist name matches; it does not start an artist radio/context. |
 | Named saved playlist | **Hey Sally** → **wait for beep** → `play playlist <name>` | `play my playlist <name>` | Matches an exact saved-library playlist name; ambiguous/missing results can fail. |
 | General music request | **Hey Sally** → **wait for beep** → `play <name>` | None | Special destinations and numbers in an active playlist browse are checked first; otherwise tries an exact artist match, then a track search. Prefer explicit song/artist/playlist wording. |
 | List saved playlists | **Hey Sally** → **wait for beep** → `list my playlists` | `list playlists`; singular `playlist`, split `play lists`/`play list`, punctuation and optional `please` are accepted | Reads five numbered names. Regular library playlists only; Liked Songs is a separate command. |
@@ -132,6 +132,8 @@ A request such as `play number of the beast` or `play number 9 dream` searches t
 4. Or **Hey Sally** → beep → **more playlists** announces the next page, numbered 6–10.
 
 The snapshot expires three minutes after the last successful page finishes speaking. Only announced numbers can be selected while the snapshot is active. Without an active snapshot, bare numeric requests search the song title; explicit `play number two` asks for a fresh list. `play song one` always searches even while browsing. A new list request replaces the snapshot; service restart/app update clears it. Start another list if it has expired. Listing currently reads at most 1,000 regular library playlists.
+
+Named playlist lookup searches at most 1,000 saved playlists. It first compares names with Unicode letters/numbers preserved and accents/punctuation folded. It can then choose a uniquely best fuzzy match within a distance of at most two edits or 40% of the saved name length, whichever is larger. This can choose a similarly named playlist; numbered selection from a freshly read list is more predictable. Artist/song exact-name comparisons also preserve Unicode and fold accents.
 
 ### Radio and Local Files preparation
 
@@ -175,7 +177,7 @@ Ordinary command failures carry only a fixed reason in `COMMAND_RESULT ERROR rea
 
 Diagnostics omit recognized words, so add your intended command separately if comfortable. A silent log cannot prove a missed wake; your observation is needed. Heartbeats are scheduled every 30 minutes but can be delayed by Android sleep.
 
-`SPOTIFY_CONNECT_RESULT CONNECTED|TIMEOUT|ERROR|IGNORED ms=... mode=PLAYBACK|AUTH` records elapsed time from the App Remote connection attempt until its callback is handled. An ignored late connection is disconnected. Playback keeps its 12-second timeout; manual authorization allows 120 seconds for consent. These timings do not prove audible playback.
+`SPOTIFY_CONNECT_RESULT CONNECTED|TIMEOUT|ERROR|IGNORED ms=... mode=PLAYBACK|AUTH` records elapsed time from the App Remote connection attempt until its callback is handled. An ignored late connection is disconnected. Playback connection attempts keep their 12-second timeout; ordinary commands also have a 30-second deadline covering search through player completion. A new accepted wake, a superseding command or service stop cancels the old ordinary operation; late results cannot dispatch playback or media keys. Playback already issued to Spotify cannot be undone by cancellation. Manual authorization allows 120 seconds for consent. These timings do not prove audible playback.
 
 ### Suggested test sequence
 
@@ -188,7 +190,7 @@ For a separate cold-start trial on the updated build, while stationary: compare 
 1. Fork the [repository](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement) and clone your fork.
 2. Create a focused branch, for example `fix/playlist-selection`. For a larger behavior change, discuss the scope in an issue first.
 3. Make the smallest change that addresses the issue; add/update a meaningful regression check when behavior changes.
-4. Run `./tests/check-playlists.ps1` and `./gradlew.bat :app:assembleDebug`. Use `--offline` only with a complete cache. Report warnings or checks you could not run.
+4. Run `./tests/check-playlists.ps1`, `python -X utf8 ./tests/check-controller.py` (Python 3 and `ANDROID_HOME` required), and `./gradlew.bat :app:assembleDebug :app:lintRelease`. Use `--offline` only with a complete cache. Report warnings or checks you could not run.
 5. For microphone, speech, background playback or audio-focus changes, describe actual device tests and distinguish them from local Java checks. Verify audible output; callbacks alone are insufficient.
 6. Commit and push to your fork, then open a PR against `main`. Explain the problem, resulting behavior, related issue and validation.
 7. Keep credentials, keystores, model/SDK downloads, APKs, diagnostics, caches and personal listening records out of commits. Do not change public/private app identity or signing to bypass an installation problem.
@@ -207,7 +209,7 @@ The first precompiled APK is **0.2.1-alpha.1**, signed with a dedicated public-r
 | Dependency notices | Full fetched licence/notice texts embedded in assets and supplied in a notices ZIP. Runtime/native inventory and provenance documented in THIRD_PARTY_NOTICES.md. |
 | Downloads | Versioned APK, checksums, notices and install guide are prerelease assets. Source-code ZIPs are not installable APKs. |
 | Spotify access | Each tester configures their own Developer Client ID or an explicitly arranged allowlisted tester app. No shared registration is embedded. |
-| Checks | Java command/wake/language/playlist checks and release build including Android vital lint pass. Signature, package/version/ABI, non-debuggable manifest and notice assets verified. |
+| Checks | Java command/wake/language/playlist checks and release build including full Android release lint pass (ten non-fatal warnings remain). Signature, package/version/ABI, non-debuggable manifest and notice assets verified. |
 | Device limits | Public certificate APK not installed over the differently signed private trial. Fresh release installation/registration and exact-artifact audio tests remain unverified. Debug-build Hey Sally/resume/next have short user confirmation; one repeated wake was reported. |
 | Maintenance | No CI yet. Manual verified prereleases are sufficient initially; broader device, battery, false-wake and call/camera/recorder checks remain. |
 
