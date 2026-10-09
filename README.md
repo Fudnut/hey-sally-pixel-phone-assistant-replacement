@@ -4,6 +4,8 @@ An experimental Android voice assistant for controlling the installed Spotify ap
 
 Wake recognition runs locally with Vosk. After the ready beep, Android's configured speech recognizer captures one command. Spotify App Remote controls playback, and Spotify Web API resolves named music and saved playlists.
 
+For complete installation steps, all command forms, bug reports, pull requests and the APK release checklist, read [TESTING_AND_DISTRIBUTION.md](TESTING_AND_DISTRIBUTION.md).
+
 ## Status and requirements
 
 - Prototype tested on a Pixel 8 Pro running Android 17. Other phones and long-term reliability are not established.

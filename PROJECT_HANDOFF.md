@@ -10,7 +10,7 @@
 
 ## Current implementation
 
-The Android app is still named **Spotify Wake Probe**, its package is `com.steve.spotifywakeprobe`, and its wake phrase is **Hey Sally**. The activation grammar, exact matcher, setup instructions, notifications and retry replies now use the new phrase. The previous Hey Spotify phrase is rejected by the matcher. Real-device recognition of Hey Sally remains untested. A signing-compatible local test APK has now updated the existing Pixel installation without resetting app data.
+The Android app is still named **Spotify Wake Probe**, its package is `com.steve.spotifywakeprobe`, and its wake phrase is **Hey Sally**. The activation grammar, exact matcher, setup instructions, notifications and retry replies now use the new phrase. The previous Hey Spotify phrase is rejected by the matcher. On 10 October the user confirmed Hey Sally activation and audible resume/next playback. One next-song attempt needed two wakes; screen/lock state was not separately confirmed. A signing-compatible local test APK has now updated the existing Pixel installation without resetting app data.
 
 The app provides hands-free wake detection, Spotify playback controls, song/artist/playlist lookup, spoken playlist pages and numbered selection, Liked Songs, DJ and Daily Mix requests. Radio matches stations in recommendations or saved playlists. Saving a missing station in Spotify and retrying has passed a user test. Native Local Files playback was not established; a playlist named Local Files is the existing fallback.
 
@@ -22,7 +22,7 @@ Wake detection uses offline Vosk with protected microphone capture. Commands use
 - The cleaned source copy built a debug APK successfully, using the installed Android SDK and shared dependency cache. This was not a completely fresh dependency-cache build.
 - Spotify SDK download passed its pinned SHA-256 check. The model archive was reused and checksum-verified.
 - Public files were screened for known private identifiers, credentials, signing keys, diagnostics and development-history files. This was a targeted scan, not an exhaustive security or dependency audit.
-- No public-copy APK was installed on the test phone. Its existing private trial installation was left intact.
+- Initial source-baseline checks did not install an APK. The later Hey Sally checkpoint below installed a locally signed public-source test build over the existing trial without clearing data.
 
 ## Build and identity boundaries
 
@@ -49,4 +49,9 @@ Do not copy private handoffs, diagnostics, registration values, keys, local cach
 - The wake self-check failed against the old matcher and passed after the change. It accepts case/outer-whitespace variants and rejects the former phrase, surrounding words, near matches, empty and null input. The existing PowerShell check now runs this self-check alongside command/language/playlist/destination checks; all passed.
 - Offline debug APK build passed using installed Android tools and a shared dependency cache, with checksum-verified SDK/model assets. Existing SDK XML, deprecation and native-symbol stripping warnings remain. This was not a fresh dependency-cache build.
 - A local test APK was signed with the existing device-compatible key, verified against the installed certificate, and installed over the Pixel app with data preservation. Redacted diagnostics were backed up privately; all previous events remain after installation. The wake foreground service returned to LISTENING_READY. No key or private diagnostic export was added to this repository.
-- Pending user test: intentional Hey Sally activation while locked/screen off, a command with audible playback, rejection of the old phrase and unwanted wakes during ordinary audio. Service readiness alone does not establish voice recognition.
+- User follow-up confirmed Hey Sally activation and audible resume/next playback; one next-song attempt required two wakes. Locked/screen-off state was not separately confirmed. Explicit old-phrase rejection, unwanted wakes and longer reliability remain pending.
+
+## Installation and distribution documentation - 10 October 2026
+
+- Added TESTING_AND_DISTRIBUTION.md with all current commands/aliases, installation/setup, troubleshooting, privacy, diagnostic bug reporting, PR steps and a concrete first-prerelease checklist. README links to it.
+- Verified the repository is public, Issues are enabled and no Releases are published. Public APK release signing, packaged dependency notices and exact-artifact/device verification remain outstanding. No APK publication, key creation, runtime changes or repository-settings changes were performed.

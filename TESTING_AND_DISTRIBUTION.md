@@ -1,0 +1,227 @@
+# Hey Sally: installation, commands, testing and GitHub distribution
+
+Updated 10 October 2026. App version: `0.2-alpha` (`versionCode 2`).
+
+## Overview
+
+Say **Hey Sally**, wait for the ready beep, then speak one Spotify command. Use a new wake phrase for each command. Initial installation, permissions, assistant selection and Spotify authorization require taps; everyday voice commands are intended to work without touching the phone.
+
+The Android app is still called **Spotify Wake Probe** and uses package `com.steve.spotifywakeprobe`. Hey Sally is the current wake phrase; Hey Spotify is no longer accepted by the exact text matcher. This remains an experimental Spotify controller, not a general phone assistant or an official Spotify product.
+
+The source is public, Issues are enabled, and contributions can be proposed now. **No GitHub Release or downloadable release APK is published as of this update.** The locally installed test APK is a debug build; it is not the planned public distribution artifact.
+
+The user confirmed Hey Sally activation, audible resume and audible next-song playback on 10 October. One next-song test needed the wake phrase twice. Those short results do not establish long-duration reliability; the screen/lock state was not separately confirmed in that follow-up. Earlier feature tests used the previous wake phrase.
+
+## Contents
+
+- [Requirements](#requirements)
+- [Install](#install)
+- [Configure Spotify and Android](#configure-spotify-and-android)
+- [Every current command](#every-current-command)
+- [Everyday use and troubleshooting](#everyday-use-and-troubleshooting)
+- [Test and report bugs](#test-and-report-bugs)
+- [Contribute a pull request](#contribute-a-pull-request)
+- [What remains before a downloadable GitHub test release](#what-remains-before-a-downloadable-github-test-release)
+- [Privacy and limits](#privacy-and-limits)
+
+## Requirements
+
+- An ARM64 Android phone running Android 14 or later. The app currently builds against and targets API 37. Device evidence is limited to a Pixel 8 Pro on Android 17.
+- Spotify installed, signed in and able to play music normally. Use Spotify Premium for the documented testing path; the Spotify development-app owner must have an active Premium subscription.
+- Your own Spotify Developer application and Client ID, or access to a specifically arranged tester application whose owner has allowlisted your account.
+- Microphone permission, notifications enabled, and Spotify Wake Probe selected as the default digital assistant for background hands-free use.
+- An Android speech-recognition provider and text-to-speech engine. Named searches and authorization require network access. The wake recognizer is local; this does not make the complete app an offline music service.
+
+Spotify currently permits up to five authenticated users per development app, with an allowlist. A successful login can still be followed by API `403` errors if the account is not allowlisted. See [Spotify quota modes](https://developer.spotify.com/documentation/web-api/concepts/quota-modes). Its July 2026 update increased the developer Client ID limit to 25 and shares quota across that developer's apps; this is **not** a 25-user allowance. See [the July update](https://developer.spotify.com/blog/2026-07-23-web-api-quota-updates).
+
+## Install
+
+### Option A: download an APK when a test release is available
+
+This route is planned, not available at the date above.
+
+1. Open the project's [Releases page](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases).
+2. Choose the intended prerelease and read its compatibility, setup and known-issue notes.
+3. Download its signed `.apk` asset. GitHub's **Source code (zip)** download contains source; Android cannot install it as an app.
+4. If supplied, compare the APK SHA-256 with the release's checksum file before installation. On Windows: `Get-FileHash ./downloaded-file.apk -Algorithm SHA256`.
+5. Open the APK on the phone. Android may require **Allow from this source** for the browser or file manager used to open it; menu wording varies. Disable that permission again after installation if you do not need it.
+6. Open **Spotify Wake Probe** and complete the configuration below.
+
+Future updates must retain the chosen package identity and compatible signing certificate. If Android reports a signature conflict, stop and check the release notes. Uninstalling or clearing storage deletes settings, encrypted authorization and diagnostic history; Android backup/device transfer is disabled. Copy diagnostic history before any intentional migration. An APK signed with a new public-release key cannot replace an existing differently signed private trial under the same package.
+
+### Option B: build the current source
+
+For developers and testers who can build Android apps:
+
+1. Install Git, PowerShell, a JDK compatible with Gradle 9.3.1, and an Android SDK with API 37 and the required build tools. This project has been built with JDK 25. Select a JDK supported by that Gradle version.
+2. Clone the repository, then run:
+
+```powershell
+git clone https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement.git
+Set-Location hey-sally-pixel-phone-assistant-replacement
+./fetch-spotify-sdk.ps1
+./fetch-model.ps1
+$env:ANDROID_HOME = 'C:\path\to\Android\Sdk'
+./tests/check-playlists.ps1
+./gradlew.bat :app:assembleDebug
+./gradlew.bat :app:signingReport
+```
+
+The SDK/model scripts verify pinned SHA-256 values. The first build downloads Gradle and dependencies. `--offline` works only after the required tools and dependencies are cached. On macOS/Linux use `./gradlew` and PowerShell (`pwsh`) for the scripts.
+
+3. The APK is `app/build/outputs/apk/debug/app-debug.apk`. Use Android's normal developer installation tools. With ADB available and the phone's USB debugging authorized:
+
+```powershell
+adb devices
+adb install -r ./app/build/outputs/apk/debug/app-debug.apk
+```
+
+`-r` preserves app data for a compatible update; it does not bypass signing conflicts. Each developer's standard debug key may differ. Keep the SHA-1 fingerprint from **your** signing report for Spotify registration. The repository includes no private signing key or prefilled Spotify registration.
+
+## Configure Spotify and Android
+
+Complete these steps while stationary, with the phone unlocked.
+
+1. Open the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). Create your own app and register redirect URI **`http://127.0.0.1:8765/callback`** exactly. Choose the Android SDK/Web API options if the dashboard asks which APIs the app uses.
+2. If package/fingerprint registration fields are offered, use package **`com.steve.spotifywakeprobe`** and the SHA-1 fingerprint for the APK you will install. For a future maintainer-signed release, use the fingerprint published with that release rather than a local debug fingerprint.
+3. Ensure the Spotify account you will test is permitted by the development app's Users Management/allowlist settings. Never post account email addresses in public bug reports.
+4. Open **Spotify Wake Probe**, enter the Developer Client ID and tap **Save Client ID**. Enter the Client ID, never the Client Secret.
+5. Tap **Authorize Spotify playback** and accept the Spotify authorization.
+6. Tap **Authorize named music and private playlists** and complete that authorization. The app uses PKCE and requests App Remote control plus private-playlist access. This enables named searches and saved-playlist lookup.
+7. Tap **Grant microphone and start probe**, then grant microphone access. If it does not start after the permission prompt, tap the button again. Enable notifications in Android's app settings if needed; the current setup button requests the microphone permission.
+8. Tap **Open Default apps for assistant setup**, then select **Spotify Wake Probe** under **Digital assistant app**. This replaces your previously selected assistant while active.
+9. Select the appropriate **Command language**: US, Australian, UK or New Zealand English, or the phone's English language. The choice applies on the next wake. It changes command recognition, not the offline wake model or TTS voice.
+10. Check the status/notification for **Listening for Hey Sally**. Start Spotify playback manually once for the first basic-control test.
+11. Lock the phone and let the screen turn off. Say **Hey Sally**, wait for the beep, then say **pause**. Repeat with **resume**, then **next song**, confirming actual audible results.
+
+After reboot, unlock once so the offline model in credential-protected storage is accessible. Background startup has earlier device evidence; repeat the reboot test with the current Hey Sally build before relying on it.
+
+## Every current command
+
+Speak these **after Hey Sally and the beep**, not as one uninterrupted wake-plus-command sentence. Examples below are suggestions, not guaranteed search results. Names in angle brackets are replaced by your own request.
+
+| Action | Preferred phrase | Other accepted forms | Behavior / limits |
+| --- | --- | --- | --- |
+| Open Spotify | `open Spotify` | None | Starts Spotify's activity. Showing it above the lock screen has not been established. |
+| Pause | `pause` | `pause music` | Pauses playback. |
+| Resume | `resume` | `resume music`, `continue` | Resumes an existing playback context. If there is nothing to resume, request a song or playlist or start Spotify manually. |
+| Next track | `next song` | `next`, `next track`, `play next song`, `play next track`, `skip` | Skips the track; does not explicitly start paused playback. Use resume first. |
+| Previous track | `previous song` | `previous`, `previous track`, `play previous song`, `play previous track` | Requests the preceding track, accounting for Spotify's restart-current-track behavior after three seconds. Does not explicitly resume paused playback. |
+| Named song | `play song <title>` | `play the song <title>`; e.g. `play song Yesterday by The Beatles` | Searches for a song. Explicit song wording also handles a numeric title or a title that looks like a special command. |
+| Named artist | `play artist <artist>` | None | Resolves the named artist and starts playback. |
+| Named saved playlist | `play playlist <name>` | `play my playlist <name>` | Matches an exact saved-library playlist name; ambiguous/missing results can fail. |
+| General music request | `play <name>` | None | Special destinations and playlist numbers are checked first; otherwise tries an exact artist match, then a track search. Prefer explicit song/artist/playlist wording. |
+| List saved playlists | `list my playlists` | `list playlists`; singular `playlist`, split `play lists`/`play list`, punctuation and optional `please` are accepted | Reads five numbered names. Regular library playlists only; Liked Songs is a separate command. |
+| Next playlist page | `more playlists` | Singular/split playlist wording, punctuation and optional `please` | Reads the next five names with continuing numbers. `next` still means next track. |
+| Choose announced playlist | `play two` | `play number two`, `play 2`, `play number 2`; use another announced number | Selects only a number already read from the current playlist snapshot. |
+| Liked Songs | `play Liked Songs` | `play my Liked Songs` | Plays Spotify's exposed collection if available. |
+| Spotify DJ | `play DJ` | `play D J`, `play Spotify DJ`, `play the DJ` | Requests the actual DJ experience if exposed for the account. |
+| Daily Mix | `play Daily Mix two` | `play Made For You two`, `play Daily Mix 2`, `play Made For You 02`; optional `number`, `zero` or `oh` before a valid number | Numbers 1–6 only. Made For You means Daily Mix here, not every personalized Spotify collection. |
+| Artist Radio | `play radio <artist>` | `play <artist> radio`, `play radio by <artist>`, `play radio for <artist>`, `play radio artist <artist>` | Matches an exact recommended or saved Radio playlist; does not create arbitrary new artist stations. |
+| Local Files | `play Local Files` | `play my Local Files` | Uses the native collection if exposed, otherwise an exact saved playlist named Local Files. Real local-track fallback playback remains untested. |
+
+The parser also tolerates the observed fallback transcripts `regime` and `review` as resume, and some number homophones such as `to`/`too` for two. These are recognition accommodations, not recommended commands. There is no current voice command for volume, shuffle, repeat, queue editing, phone calls, messages, changing the wake phrase or stopping the probe.
+
+### Browse and select playlists
+
+1. **Hey Sally** → beep → **list my playlists**.
+2. Wait until all five names have been spoken. Do not interrupt the reply.
+3. **Hey Sally** → beep → **play two** selects the second announced playlist.
+4. Or **Hey Sally** → beep → **more playlists** announces the next page, numbered 6–10.
+
+The snapshot expires three minutes after the last successful page finishes speaking. Only announced numbers can be selected. A new list request replaces the snapshot; service restart/app update clears it. Start another list if it has expired. Listing currently reads at most 1,000 regular library playlists.
+
+### Radio and Local Files preparation
+
+If Radio is missing from recommendations, open the artist in Spotify, choose **Go to Radio**, save the station, then retry. Save stations before your journey. The saved-station workflow has passed a user test, but availability is not guaranteed for every artist/account.
+
+For Local Files, first make the tracks play normally inside Spotify on the phone, then create/populate a regular library playlist named **Local Files** for the fallback. The tested device did not expose a native Local Files collection. A missing destination receives a spoken explanation rather than an unrelated song search.
+
+## Everyday use and troubleshooting
+
+- **Beep, then nothing audible:** the beep means the recognizer is ready; it is not a success signal. Wait for it before speaking. If Spotify is paused, try **resume** or a named playback request before **next song**.
+- **No wake beep:** wait until the prior reply/command ends, then try the exact **Hey Sally** phrase again. Check listener status, microphone permission, default-assistant selection and whether another app is using audio input. Record a missed first attempt rather than assuming the command failed.
+- **Wrong music:** use explicit **play song**, **play artist** or **play playlist** wording, with an artist qualifier where helpful.
+- **Quiet replies:** replies request the media route/volume. Check media volume and the chosen phone/Bluetooth/car output. One earlier car-route test succeeded; every route is not validated.
+- **Playlist number rejected:** list again; it may have expired or the number may not have been announced.
+- **Language support check fails:** some recognizers cannot answer the support query. This does not prove the language is unavailable; use an actual spoken test. The check does not download a model.
+- **Buttons overlap system bars:** a setup-screen inset issue remains. Scroll the desired control into the middle of the screen before tapping.
+- **Stop listening:** use **Stop probe**. Stopping disables hands-free wake. To stop background assistant activation as well, select your previous assistant in Android's Default apps settings.
+- **Authorization fails:** check the exact redirect, Client ID, allowed Spotify account and APK fingerprint where applicable. Reauthorize while unlocked. Do not include tokens/passwords in reports.
+
+## Test and report bugs
+
+Open [GitHub Issues](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/issues) and create a bug report. A GitHub account is needed to submit it. Issues are enabled; dedicated issue templates are not yet installed.
+
+Include:
+
+- App version and APK/release or source commit; installation source.
+- Phone model, Android version, Spotify version, command language, and audio route (phone, headphones, Bluetooth speaker/car).
+- Whether screen was on/off and phone unlocked/locked; whether music was already playing.
+- Approximate time **with timezone**, intended wake/command, number of attempts, expected result and what you actually heard.
+- Whether the beep occurred, any spoken failure reply, and whether music resumed after the reply.
+- Minimal steps to reproduce. Use neutral example music names or redact personal playlist names.
+- Reviewed diagnostic history if useful. Do not post full ADB logs, OAuth tokens, passwords, private keys, account email addresses or screenshots revealing them.
+
+### Copy diagnostic history
+
+Open the app, tap **Refresh status**, then **Copy diagnostic history**. Paste into a private note, review it, and attach only relevant redacted events to an issue. The app stores up to 1,024 events; busy use can overwrite earlier entries. Copy history each evening during a multi-day trial. **Start fresh diagnostic trial** clears it, so save any history you need first. Do not reset it merely because a command failed.
+
+Diagnostics omit recognized words, so add your intended command separately if comfortable. A silent log cannot prove a missed wake; your observation is needed. Heartbeats are scheduled every 30 minutes but can be delayed by Android sleep.
+
+### Suggested test sequence
+
+While stationary, record observations for: wake with music paused and playing; pause/resume/next/previous; a named song; playlist list/number selection; a missing destination and recovery; phone and Bluetooth output; locked screen; reboot followed by first unlock; and several hours/overnight screen-off use. Note unwanted beeps, missed phrases and battery levels/charging. Call/camera/recorder coexistence needs separate checks. Passing one command is not an overall reliability or battery result.
+
+## Contribute a pull request
+
+1. Fork the [repository](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement) and clone your fork.
+2. Create a focused branch, for example `fix/playlist-selection`. For a larger behavior change, discuss the scope in an issue first.
+3. Make the smallest change that addresses the issue; add/update a meaningful regression check when behavior changes.
+4. Run `./tests/check-playlists.ps1` and `./gradlew.bat :app:assembleDebug`. Use `--offline` only with a complete cache. Report warnings or checks you could not run.
+5. For microphone, speech, background playback or audio-focus changes, describe actual device tests and distinguish them from local Java checks. Verify audible output; callbacks alone are insufficient.
+6. Commit and push to your fork, then open a PR against `main`. Explain the problem, resulting behavior, related issue and validation.
+7. Keep credentials, keystores, model/SDK downloads, APKs, diagnostics, caches and personal listening records out of commits. Do not change public/private app identity or signing to bypass an installation problem.
+
+No contributor receives direct write access merely by submitting a PR. Maintainers review and merge contributions. The project's original code is MIT licensed; dependencies keep their own terms. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## What remains before a downloadable GitHub test release
+
+This is a release-preparation checklist, not a statement that these steps have been completed.
+
+| Work | Current state | Needed for the first public test APK |
+| --- | --- | --- |
+| Public source and collaboration | Public repository; Issues enabled; `main` contains the Hey Sally change | Already usable for source downloads, bug reports and PRs. Add a concise bug template, PR template and CONTRIBUTING link to make submissions consistent. |
+| Tester Spotify access | No prefilled Client ID; own-ID setup exists | Choose/document own-Client-ID testing as the initial path. Verify a fresh Developer app and clean account setup end to end. A shared development Client ID cannot provide unrestricted public access. |
+| Public APK signing | Local builds use debug signing; private-key-signed device APK was for a personal test | Create a dedicated durable public-release signing key, keep it outside Git, back it up securely, and configure a non-debuggable release build. Do not distribute the personal debug-signed artifact as the release. Publish the release certificate fingerprint needed for registration. |
+| Version and identity | App label Spotify Wake Probe; package `com.steve.spotifywakeprobe`; versionCode 2 / 0.2-alpha | Decide whether to retain identity. Choose the first release version and increment versionCode for updates. With a different key under the same package, existing private-trial installs need an explicit migration decision; do not uninstall them automatically. |
+| Binary dependency notices | Source MIT licence and upstream links exist; table explicitly incomplete for APK distribution | Inventory the actual APK's direct/transitive/native dependencies and embedded Vosk model. Include required complete licence/copyright/NOTICE texts, review Spotify SDK terms, and provide notices in/alongside the release artifact as appropriate. |
+| Release build verification | Debug APK and Java checks pass using shared tools/cache | Build the exact release variant, verify its signature/non-debuggable flag/version/ABI, inspect contents for private values/probe activities, and test clean installation plus same-key update on a phone. Test fresh Spotify setup and real audible playback. |
+| Current wake and reliability | Hey Sally, resume and next have short user confirmation; one repeated wake | Repeat locked/screen-off and music-playing wake tests with the exact signed release artifact. Record known false/missed wakes, unmeasured battery/coexistence and device limits in prerelease notes. A long-term reliability claim is not required to label it experimental, but the limits must be clear. |
+| Release download | No published GitHub Releases | Create a tag for the verified commit and a GitHub **prerelease**. Attach the signed APK, SHA256SUMS file, dependency notices and notes covering setup, changes, known issues and bug-report link. Review the exact assets before publication. |
+| Maintenance | Manual local checks exist; no `.github` workflows/templates currently present | Recommended: CI for the Java checks and Android build on PRs, review before merging, and a simple versioned release process. Keep signing credentials away from untrusted PR jobs. CI is helpful; it is not required for a first manually verified prerelease. |
+
+### Recommended release route
+
+Start with a **maintainer-signed experimental APK plus each tester's own Spotify Client ID**. This removes the need for testers to compile Android code, although Spotify registration/authorization remains necessary. A small specifically allowlisted tester group is another option. Do not advertise unrestricted one-tap setup through the maintainer's development app.
+
+Broader shared Spotify access would require a separate access/approval plan under Spotify's current rules; publishing an APK does not grant it. See [quota modes](https://developer.spotify.com/documentation/web-api/concepts/quota-modes).
+
+A manual prerelease is sufficient initially: verify one release build, attach the approved assets to a tagged GitHub prerelease, and link its installation instructions and Issues page. Full release automation can follow once the signing/update process is proven. The present task adds documentation; it does not generate a release key, change app identity, publish an APK or enable CI/templates.
+
+## Privacy and limits
+
+Wake audio is processed locally with Vosk and is not saved by app-owned code. Command audio may be sent to Android's speech provider; playlist names go to the configured TTS engine, whose voice may use network processing. Named searches/authorization go to Spotify. There is no Gemini connection or project-operated backend. Tokens are encrypted using Android Keystore; backup and device transfer are disabled.
+
+Continuous wake capture shows Android's microphone indicator. Protected capture can interfere with background song identification/recording. Calls, camera and voice-recorder coexistence remain incompletely tested. Use the stop control when another app needs the microphone. Replies temporarily suspend recognition; interruption during readout is not supported.
+
+This remains an ARM64 Android 14+ prototype tested on one phone. False wakes, missed commands, cold/background audio problems and device-specific behavior are possible. Test setup and troubleshooting while stationary. It does not establish a success rate, all-day survival or battery-use figure.
+
+## Maintainer references
+
+- [GitHub Releases and binary assets](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)
+- [GitHub issue and PR templates](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/about-issue-and-pull-request-templates)
+- [Android app signing and update continuity](https://developer.android.com/studio/publish/app-signing)
+- [Spotify development access and quotas](https://developer.spotify.com/documentation/web-api/concepts/quota-modes)
+- [Spotify July 2026 quota update](https://developer.spotify.com/blog/2026-07-23-web-api-quota-updates)
+- [Third-party source notices and APK review boundary](THIRD_PARTY_NOTICES.md)
