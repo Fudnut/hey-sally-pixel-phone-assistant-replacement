@@ -127,6 +127,11 @@ extra="""
   connectedBefore.onConnected(new SpotifyAppRemote());check(PlayerApi.calls==0,"Old connection cannot replace a newer song");
   SpotifyAppRemote.listener.onConnected(new SpotifyAppRemote());check(PlayerApi.calls==1,"Current song must dispatch");
   newSong.run();PlayerApi.last.succeed(null);check(reports.isEmpty(),"Stop cancellation must suppress late completion");
+  var sameName=SpotifyController.class.getDeclaredMethod("sameName",String.class,String.class);sameName.setAccessible(true);
+  check(!(boolean)sameName.invoke(null,"日本","韓国"),"Distinct non-Latin names must not collapse to empty matches");
+  check((boolean)sameName.invoke(null,"Café","Cafe"),"Accented names must match their unaccented form");
+  check((boolean)sameName.invoke(null,"日本","日本"),"Identical non-Latin names must remain matchable");
+  check(!(boolean)sameName.invoke(null,"!!!","???"),"Empty normalized names must not match");
   System.out.println("Ordinary cancellation, stale callbacks, media-key suppression and completion deadline checks passed");
 """
 files[key]=files[key].replace('  System.out.println("Connection timeout',extra+'  System.out.println("Connection timeout')

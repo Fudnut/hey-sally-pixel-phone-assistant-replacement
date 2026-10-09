@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.Locale;
 import java.util.ArrayList;
 import java.util.List;
@@ -312,6 +313,7 @@ final class SpotifyController {
                         Log.i("SpotifyWakeProbe", "PLAYLIST_RESOLVED exact");
                         return item.getString("uri");
                     }
+                    if (normalizedName(savedName).isEmpty() || normalizedName(name).isEmpty()) continue;
                     int distance = distance(normalizedName(savedName).replace(" ", ""),
                             normalizedName(name).replace(" ", ""));
                     if (distance < bestDistance) {
@@ -378,11 +380,13 @@ final class SpotifyController {
     }
 
     private static boolean sameName(String a, String b) {
-        return normalizedName(a).equals(normalizedName(b));
+        String normalized = normalizedName(a);
+        return !normalized.isEmpty() && normalized.equals(normalizedName(b));
     }
 
     private static String normalizedName(String name) {
-        String value = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", "")
+        String value = Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N} ]", "")
                 .trim().replaceAll("\\s+", " ");
         return value;
     }
