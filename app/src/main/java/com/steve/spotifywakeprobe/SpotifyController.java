@@ -41,7 +41,7 @@ final class SpotifyController {
         connect(activity, clientId, true, remote -> {
             if (finished.compareAndSet(false, true)) report.accept("Spotify App Remote authorized");
             SpotifyAppRemote.disconnect(remote);
-        }, message -> report.accept("Spotify playback authorization failed. Check your Client ID and Spotify, then try again."), finished);
+        }, message -> report.accept("Spotify playback authorization failed (" + CommandFailure.code(message) + "). Check your Client ID and Spotify, then try again."), finished);
     }
 
     static void execute(Context context, VoiceCommand command, List<String> playlistNames,

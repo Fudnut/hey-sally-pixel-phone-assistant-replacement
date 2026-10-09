@@ -82,7 +82,7 @@ final class SpotifyOAuth {
                     post(report, "Spotify search and private playlists authorized");
                 }
             } catch (Exception error) {
-                post(report, "Spotify authorization failed: " + error.getMessage());
+                post(report, "Spotify authorization failed: " + CommandFailure.setupDetail(error));
             }
         }, "SpotifyOAuth").start();
     }
@@ -125,9 +125,7 @@ final class SpotifyOAuth {
                 out.write(body.getBytes(StandardCharsets.UTF_8));
             }
             int status = connection.getResponseCode();
-            if (status == 400 || status == 401 || status == 403)
-                throw new SecurityException("Spotify authorization required");
-            if (status != 200) throw new java.io.IOException("Spotify token request failed");
+            if (status != 200) throw new CommandFailure.TokenHttpException(status);
             try (var in = connection.getInputStream()) {
                 return new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8));
             }

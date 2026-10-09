@@ -19,6 +19,20 @@ public final class PlaylistBrowseCheck {
                 || CommandFailure.code("private unstructured error") != CommandFailure.Reason.REMOTE
                 || CommandFailure.code(null) != CommandFailure.Reason.REMOTE)
             throw new AssertionError("Untrusted or unknown report detail must not enter diagnostic reason codes");
+        for (int i = 0; i < failures.length; i++) {
+            if (!CommandFailure.setupDetail(failures[i]).equals(reasons[i].name()))
+                throw new AssertionError("Setup detail must use fixed reasons without private exception messages");
+        }
+        for (int status : new int[]{400, 401, 403, 429, 500, 503, -1}) {
+            Throwable error = new CommandFailure.TokenHttpException(status);
+            CommandFailure.Reason reason = status == 400 || status == 401 || status == 403
+                    ? CommandFailure.Reason.AUTH : CommandFailure.Reason.NETWORK;
+            String detail = reason.name() + (status < 100 ? "" : " (HTTP " + status + ")");
+            if (CommandFailure.reason(error) != reason || !CommandFailure.setupDetail(error).equals(detail)
+                    || !CommandFailure.setupDetail(new RuntimeException("private wrapper", error)).equals(detail)
+                    || !CommandFailure.report(CommandFailure.reason(error)).equals("Spotify failure: " + reason))
+                throw new AssertionError("Only setup detail should retain a valid HTTP status; ordinary reports keep a fixed code");
+        }
         WakeResults wakes = new WakeResults(100);
         for (int i = 0; i < 10000; i++) {
             if (wakes.result("private nearby speech", 200) != null || wakes.result("", 200) != null)
