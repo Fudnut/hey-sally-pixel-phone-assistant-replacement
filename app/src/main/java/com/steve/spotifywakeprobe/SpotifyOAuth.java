@@ -61,10 +61,10 @@ final class SpotifyOAuth {
                     String request = new BufferedReader(new InputStreamReader(socket.getInputStream(),
                             StandardCharsets.US_ASCII)).readLine();
                     if (request == null || !request.startsWith("GET /callback?"))
-                        throw new IllegalStateException("Unexpected authorization callback");
+                        throw new CommandFailure.SetupException(CommandFailure.SetupReason.CALLBACK);
                     Uri callback = Uri.parse("http://127.0.0.1:8765" + request.split(" ")[1]);
                     if (!state.equals(callback.getQueryParameter("state")))
-                        throw new IllegalStateException("Authorization state did not match");
+                        throw new CommandFailure.SetupException(CommandFailure.SetupReason.STATE_MISMATCH);
                     String code = callback.getQueryParameter("code");
                     String message = code == null ? "Spotify authorization was declined" :
                             "Spotify authorization received. Return to the app.";
@@ -74,7 +74,7 @@ final class SpotifyOAuth {
                             "Content-Length: " + html.length + "\r\nConnection: close\r\n\r\n")
                             .getBytes(StandardCharsets.US_ASCII));
                     socket.getOutputStream().write(html);
-                    if (code == null) throw new IllegalStateException("Spotify authorization was declined");
+                    if (code == null) throw new CommandFailure.SetupException(CommandFailure.SetupReason.DECLINED);
                     JSONObject token = tokenRequest("grant_type=authorization_code&code=" + enc(code) +
                             "&redirect_uri=" + enc(REDIRECT) + "&client_id=" + enc(clientId) +
                             "&code_verifier=" + enc(verifier));

@@ -14,6 +14,12 @@ public final class PlaylistBrowseCheck {
             if (chosen.kind != VoiceCommand.Kind.PLAY || !chosen.query.equals(title))
                 throw new AssertionError("N-best arbitration must preserve number-prefixed titles");
         }
+        for (CommandFailure.SetupReason reason : CommandFailure.SetupReason.values()) {
+            Throwable local = new CommandFailure.SetupException(reason);
+            if (!CommandFailure.setupDetail(new RuntimeException("private wrapper", local)).equals(reason.name())
+                    || CommandFailure.reason(local) != CommandFailure.Reason.AUTH)
+                throw new AssertionError("Local authorization needs fixed setup detail and generic AUTH diagnostics");
+        }
         Throwable[] failures = {new SecurityException("private token/title"),
                 new java.net.SocketTimeoutException("private host"), new java.io.IOException("private URL"),
                 new java.util.NoSuchElementException("private playlist"), new RuntimeException("private SDK error")};

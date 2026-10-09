@@ -7,6 +7,11 @@ import java.util.NoSuchElementException;
 /** Safe diagnostic categories and setup detail; never copy exception messages. */
 final class CommandFailure {
     enum Reason { AUTH, TIMEOUT, NETWORK, NO_MATCH, REMOTE }
+    enum SetupReason { DECLINED, STATE_MISMATCH, CALLBACK }
+    static final class SetupException extends SecurityException {
+        final SetupReason reason;
+        SetupException(SetupReason reason) { super(reason.name()); this.reason = reason; }
+    }
     private static final String PREFIX = "Spotify failure: ";
 
     static final class TokenHttpException extends IOException {
@@ -39,6 +44,7 @@ final class CommandFailure {
     static String setupDetail(Throwable error) {
         String detail = reason(error).name();
         for (int depth = 0; error != null && depth < 8; depth++, error = error.getCause()) {
+            if (error instanceof SetupException) return ((SetupException) error).reason.name();
             if (error instanceof TokenHttpException) {
                 int status = ((TokenHttpException) error).status;
                 return status >= 100 && status <= 599 ? detail + " (HTTP " + status + ")" : detail;
