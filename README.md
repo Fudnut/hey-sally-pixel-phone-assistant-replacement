@@ -52,6 +52,8 @@ A public repository does not remove Spotify's API access restrictions. Developme
 
 ## Commands
 
+The downloadable GitHub APK is still alpha.1. The main branch prepares alpha.2: expanded control phrasing, numeric songs outside playlist browsing, spoken ordinary failures and additional wake diagnostics apply to that next build.
+
 | Say after the beep | Behavior |
 | --- | --- |
 | Open Spotify | Open the Spotify app |

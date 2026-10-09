@@ -100,6 +100,8 @@ After reboot, unlock once so the offline model in credential-protected storage i
 
 Every row includes the full sequence: say **Hey Sally**, **wait for the beep**, then speak the command. Use a fresh wake for every request. Alternate command forms use the same Hey Sally → beep sequence. Examples below are suggestions, not guaranteed search results. Names in angle brackets are replaced by your own request.
 
+The table describes the current alpha.2 source. The published alpha.1 APK uses the earlier exact control phrases, always treats bare numeric requests as playlist selection and lacks the new ordinary-failure speech and wake-result events. Alpha.2 has not been published.
+
 | Action | Preferred voice sequence | Other command forms after Hey Sally and the beep | Behavior / limits |
 | --- | --- | --- | --- |
 | Open Spotify | **Hey Sally** → **wait for beep** → `open Spotify` | None | Starts Spotify's activity. Showing it above the lock screen has not been established. |
