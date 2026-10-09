@@ -5,6 +5,7 @@ New-Item -ItemType Directory -Path $output -Force | Out-Null
 $sources = @(
     "$root/app/src/main/java/com/steve/spotifywakeprobe/WakePhrase.java",
     "$root/app/src/main/java/com/steve/spotifywakeprobe/WakeResults.java",
+    "$root/app/src/main/java/com/steve/spotifywakeprobe/CommandFailure.java",
     "$root/app/src/main/java/com/steve/spotifywakeprobe/VoiceCommand.java",
     "$root/app/src/main/java/com/steve/spotifywakeprobe/PlaylistBrowse.java",
     "$root/app/src/main/java/com/steve/spotifywakeprobe/CommandLanguage.java",

@@ -20,6 +20,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.InputStream;
+import java.io.IOException;
+import java.util.NoSuchElementException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -38,22 +40,22 @@ final class SpotifyController {
         connect(activity, clientId, true, remote -> {
             if (finished.compareAndSet(false, true)) report.accept("Spotify App Remote authorized");
             SpotifyAppRemote.disconnect(remote);
-        }, report, finished);
+        }, message -> report.accept("Spotify playback authorization failed. Check your Client ID and Spotify, then try again."), finished);
     }
 
     static void execute(Context context, VoiceCommand command, List<String> playlistNames,
                         Consumer<String> report) {
         if (command.kind == VoiceCommand.Kind.OPEN) {
             Intent launch = context.getPackageManager().getLaunchIntentForPackage("com.spotify.music");
-            if (launch == null) { report.accept("Spotify app is not installed"); return; }
+            if (launch == null) { report.accept(CommandFailure.report(CommandFailure.Reason.REMOTE)); return; }
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try { context.startActivity(launch); report.accept("Opening Spotify"); }
-            catch (RuntimeException error) { report.accept("Could not open Spotify"); }
+            catch (RuntimeException error) { report.accept(CommandFailure.report(CommandFailure.reason(error))); }
             return;
         }
         String clientId = context.getSharedPreferences("spotify", Context.MODE_PRIVATE)
                 .getString("clientId", "").trim();
-        if (clientId.isEmpty()) { report.accept("Set Spotify Client ID in the app"); return; }
+        if (clientId.isEmpty()) { report.accept(CommandFailure.report(CommandFailure.Reason.AUTH)); return; }
         if (command.kind != VoiceCommand.Kind.PLAY) {
             play(context, clientId, command, null, report);
             return;
@@ -64,7 +66,7 @@ final class SpotifyController {
                 new Handler(Looper.getMainLooper()).post(() -> play(context, clientId, command, uri, report));
             } catch (Exception error) {
                 new Handler(Looper.getMainLooper()).post(() -> report.accept(
-                        "Spotify lookup failed"));
+                        CommandFailure.report(CommandFailure.reason(error))));
             }
         }, "SpotifySearch").start();
     }
@@ -72,7 +74,7 @@ final class SpotifyController {
     static void playPlaylist(Context context, String uri, Consumer<String> report) {
         String clientId = context.getSharedPreferences("spotify", Context.MODE_PRIVATE)
                 .getString("clientId", "").trim();
-        if (clientId.isEmpty()) { report.accept("Set Spotify Client ID in the app"); return; }
+        if (clientId.isEmpty()) { report.accept(CommandFailure.report(CommandFailure.Reason.AUTH)); return; }
         play(context, clientId, VoiceCommand.selectedPlaylist(), uri, report);
     }
 
@@ -144,7 +146,7 @@ final class SpotifyController {
             });
             result.setErrorCallback(error -> {
                 if (finished.compareAndSet(false, true))
-                    report.accept("Spotify command failed");
+                    report.accept(CommandFailure.report(CommandFailure.reason(error)));
                 SpotifyAppRemote.disconnect(remote);
             });
         }, report, finished);
@@ -166,7 +168,7 @@ final class SpotifyController {
             skipPrevious(remote, skips, report, finished);
         }).setErrorCallback(error -> {
             if (finished.compareAndSet(false, true))
-                report.accept("Spotify player state failed");
+                report.accept(CommandFailure.report(CommandFailure.reason(error)));
             SpotifyAppRemote.disconnect(remote);
         });
     }
@@ -181,7 +183,7 @@ final class SpotifyController {
             }
         }).setErrorCallback(error -> {
             if (finished.compareAndSet(false, true))
-                report.accept("Spotify previous failed");
+                report.accept(CommandFailure.report(CommandFailure.reason(error)));
             SpotifyAppRemote.disconnect(remote);
         });
     }
@@ -196,7 +198,7 @@ final class SpotifyController {
         Runnable timeout = () -> {
             if (connecting.compareAndSet(true, false) && finished.compareAndSet(false, true)) {
                 Log.w("SpotifyWakeProbe", "SPOTIFY_CONNECT_TIMEOUT");
-                report.accept("Spotify connection timed out");
+                report.accept(CommandFailure.report(CommandFailure.Reason.TIMEOUT));
             }
         };
         // Manual authorization needs time for consent; ordinary playback fails promptly.
@@ -222,7 +224,7 @@ final class SpotifyController {
                     main.removeCallbacks(timeout);
                     if (!finished.compareAndSet(false, true)) return;
                     Log.e("SpotifyWakeProbe", "SPOTIFY_CONNECT_ERROR");
-                    report.accept("Spotify connection failed");
+                    report.accept(CommandFailure.report(CommandFailure.reason(error)));
                 });
             }
         };
@@ -258,7 +260,7 @@ final class SpotifyController {
         }
         JSONArray items = search(token, query, "track", 1);
         if (items.length() == 0 && plain != null) items = plain;
-        if (items.length() == 0) throw new IllegalStateException("No matching song");
+        if (items.length() == 0) throw new NoSuchElementException("No matching song");
         return items.getJSONObject(0).getString("uri");
     }
 
@@ -267,14 +269,12 @@ final class SpotifyController {
         JSONObject best = null;
         int bestDistance = Integer.MAX_VALUE;
         int secondDistance = Integer.MAX_VALUE;
-        int seen = 0;
         while (offset < 1000) {
             JSONObject page = playlistPage(token, offset);
             JSONArray items = page.getJSONArray("items");
             for (int i = 0; i < items.length(); i++) {
                 JSONObject item = items.optJSONObject(i);
                 if (item == null) continue;
-                seen++;
                 String savedName = item.optString("name");
                 for (String name : names) {
                     if (sameName(savedName, name)) {
@@ -301,7 +301,7 @@ final class SpotifyController {
             Log.i("SpotifyWakeProbe", "PLAYLIST_RESOLVED fuzzy distance=" + bestDistance);
             return best.getString("uri");
         }
-        throw new IllegalStateException("No clear playlist match among " + seen + " library playlists");
+        throw new NoSuchElementException("No clear playlist match");
     }
 
     private static int distance(String a, String b) {
@@ -341,7 +341,7 @@ final class SpotifyController {
                 }
             }
         }
-        if (count == 0) throw new IllegalStateException("No songs by that artist");
+        if (count == 0) throw new NoSuchElementException("No songs by that artist");
         return tracks.getJSONObject(matching[ThreadLocalRandom.current().nextInt(count)])
                 .getString("uri");
     }
@@ -371,9 +371,9 @@ final class SpotifyController {
         connection.setRequestProperty("Authorization", "Bearer " + token);
         try {
             int status = connection.getResponseCode();
-            if (status == 403) throw new IllegalStateException(
+            if (status == 401 || status == 403) throw new SecurityException(
                     "Access denied. Reauthorize named music and private playlists in the app");
-            if (status != 200) throw new IllegalStateException("HTTP " + status);
+            if (status != 200) throw new IOException("Spotify request failed");
             try (InputStream in = connection.getInputStream()) {
                 return new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8));
             }

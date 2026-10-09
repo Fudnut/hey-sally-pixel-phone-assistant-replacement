@@ -2,6 +2,23 @@ package com.steve.spotifywakeprobe;
 
 public final class PlaylistBrowseCheck {
     public static void main(String[] args) {
+        Throwable[] failures = {new SecurityException("private token/title"),
+                new java.net.SocketTimeoutException("private host"), new java.io.IOException("private URL"),
+                new java.util.NoSuchElementException("private playlist"), new RuntimeException("private SDK error")};
+        CommandFailure.Reason[] reasons = {CommandFailure.Reason.AUTH, CommandFailure.Reason.TIMEOUT,
+                CommandFailure.Reason.NETWORK, CommandFailure.Reason.NO_MATCH, CommandFailure.Reason.REMOTE};
+        for (int i = 0; i < failures.length; i++) {
+            if (CommandFailure.reason(failures[i]) != reasons[i]
+                    || CommandFailure.reason(new RuntimeException("private wrapper", failures[i])) != reasons[i])
+                throw new AssertionError("Failure reasons must follow exception types, including wrapped causes");
+            String report = CommandFailure.report(reasons[i]);
+            if (CommandFailure.code(report) != reasons[i] || report.contains("private"))
+                throw new AssertionError("Failure reports must contain only an allowlisted reason");
+        }
+        if (CommandFailure.code("Spotify failure: AUTH private title") != CommandFailure.Reason.REMOTE
+                || CommandFailure.code("private unstructured error") != CommandFailure.Reason.REMOTE
+                || CommandFailure.code(null) != CommandFailure.Reason.REMOTE)
+            throw new AssertionError("Untrusted or unknown report detail must not enter diagnostic reason codes");
         WakeResults wakes = new WakeResults(100);
         for (int i = 0; i < 10000; i++) {
             if (wakes.result("private nearby speech", 200) != null || wakes.result("", 200) != null)

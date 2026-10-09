@@ -677,9 +677,10 @@ public class WakeService extends Service {
     private boolean commandStatus(String commandLabel, String message) {
         boolean success = message.startsWith("Spotify: ") || "Opening Spotify".equals(message);
         String status = commandLabel + (success ? " completed" : " failed");
-        if (!success && message.contains("Authorize")) status += "; authorize Spotify in the app";
+        CommandFailure.Reason reason = CommandFailure.code(message);
+        if (!success && reason == CommandFailure.Reason.AUTH) status += "; authorize Spotify in the app";
         Log.i(TAG, "COMMAND_STATUS " + status);
-        DiagnosticHistory.record(this, success ? "COMMAND_RESULT OK" : "COMMAND_RESULT ERROR");
+        DiagnosticHistory.record(this, success ? "COMMAND_RESULT OK" : "COMMAND_RESULT ERROR reason=" + reason);
         getSharedPreferences("probe", MODE_PRIVATE).edit()
                 .putString("lastCommand", Instant.now() + " " + status).apply();
         finishCommandFocus();

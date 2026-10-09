@@ -94,7 +94,7 @@ final class SpotifyOAuth {
             token = decrypt(prefs.getString("access", null));
         } catch (AEADBadTagException | IllegalArgumentException error) {
             prefs.edit().remove("access").remove("refresh").remove("expires").apply();
-            throw new IllegalStateException("Authorize named music and private playlists again", error);
+            throw new SecurityException("Authorize named music and private playlists again", error);
         }
         if (token != null && System.currentTimeMillis() < prefs.getLong("expires", 0) - 60000)
             return token;
@@ -103,9 +103,9 @@ final class SpotifyOAuth {
             refresh = decrypt(prefs.getString("refresh", null));
         } catch (AEADBadTagException | IllegalArgumentException error) {
             prefs.edit().remove("access").remove("refresh").remove("expires").apply();
-            throw new IllegalStateException("Authorize named music and private playlists again", error);
+            throw new SecurityException("Authorize named music and private playlists again", error);
         }
-        if (refresh == null) throw new IllegalStateException("Authorize Spotify search in the app first");
+        if (refresh == null) throw new SecurityException("Authorize Spotify search in the app first");
         JSONObject updated = tokenRequest("grant_type=refresh_token&refresh_token=" + enc(refresh) +
                 "&client_id=" + enc(clientId));
         save(context, updated);
@@ -120,13 +120,17 @@ final class SpotifyOAuth {
         connection.setReadTimeout(10000);
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-        try (OutputStream out = connection.getOutputStream()) {
-            out.write(body.getBytes(StandardCharsets.UTF_8));
-        }
-        if (connection.getResponseCode() != 200)
-            throw new IllegalStateException("Spotify token HTTP " + connection.getResponseCode());
-        try (var in = connection.getInputStream()) {
-            return new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+        try {
+            try (OutputStream out = connection.getOutputStream()) {
+                out.write(body.getBytes(StandardCharsets.UTF_8));
+            }
+            int status = connection.getResponseCode();
+            if (status == 400 || status == 401 || status == 403)
+                throw new SecurityException("Spotify authorization required");
+            if (status != 200) throw new java.io.IOException("Spotify token request failed");
+            try (var in = connection.getInputStream()) {
+                return new JSONObject(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+            }
         } finally { connection.disconnect(); }
     }
 

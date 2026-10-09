@@ -171,6 +171,8 @@ Open the app, tap **Refresh status**, then **Copy diagnostic history**. Paste in
 
 In alpha.2 source builds, `WAKE_RESULT class=accepted ms=...` records exact wake-phrase matches individually. Other and empty results are counted in `WAKE_RESULTS_SUMMARY other=... empty=... ms=...`, normally once every five minutes (Android sleep can delay it), with a partial summary on service stop. Routine results do not carry individual timestamps or audio durations. Summary counts may reveal nearby speech/noise activity; accepted wakes and debounce rejections retain individual timestamps. Starting a fresh diagnostic trial also clears pending counts. Accepted means an exact wake-phrase match; `WAKE_IGNORED_DEBOUNCE` then identifies one rejected by the existing five-second gate. Summary milliseconds describe the elapsed counting window. Accepted-result milliseconds measure captured audio since recording started or the preceding finalized result, including silence; they are not latency from when you spoke the wake phrase. No recognized words or audio are stored.
 
+Ordinary command failures carry only a fixed reason in `COMMAND_RESULT ERROR reason=AUTH|TIMEOUT|NETWORK|NO_MATCH|REMOTE`. These categories help distinguish authorization, timeouts, connectivity, missing matches and other remote failures; exception text, URLs and recognized words are omitted. The spoken failure remains generic.
+
 Diagnostics omit recognized words, so add your intended command separately if comfortable. A silent log cannot prove a missed wake; your observation is needed. Heartbeats are scheduled every 30 minutes but can be delayed by Android sleep.
 
 ### Suggested test sequence
