@@ -44,39 +44,72 @@ final class SpotifyController {
         }, message -> report.accept("Spotify playback authorization failed (" + CommandFailure.code(message) + "). Check your Client ID and Spotify, then try again."), finished);
     }
 
-    static void execute(Context context, VoiceCommand command, List<String> playlistNames,
-                        Consumer<String> report) {
-        if (command.kind == VoiceCommand.Kind.OPEN) {
-            Intent launch = context.getPackageManager().getLaunchIntentForPackage("com.spotify.music");
-            if (launch == null) { report.accept(CommandFailure.report(CommandFailure.Reason.REMOTE)); return; }
-            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            try { context.startActivity(launch); report.accept("Opening Spotify"); }
-            catch (RuntimeException error) { report.accept(CommandFailure.report(CommandFailure.reason(error))); }
-            return;
+    /** All lifetime transitions and Spotify side effects run on the main thread. */
+    private static final class Operation implements Runnable {
+        final Handler main = new Handler(Looper.getMainLooper());
+        final AtomicBoolean active = new AtomicBoolean(true);
+        final AtomicBoolean finished = new AtomicBoolean();
+        final Consumer<String> report;
+        final Runnable deadline;
+        SpotifyAppRemote remote;
+        Thread search;
+
+        Operation(Consumer<String> report) {
+            this.report = report;
+            deadline = () -> complete(CommandFailure.report(CommandFailure.Reason.TIMEOUT));
+            main.postDelayed(deadline, 30000);
         }
-        String clientId = context.getSharedPreferences("spotify", Context.MODE_PRIVATE)
-                .getString("clientId", "").trim();
-        if (clientId.isEmpty()) { report.accept(CommandFailure.report(CommandFailure.Reason.AUTH)); return; }
-        if (command.kind != VoiceCommand.Kind.PLAY) {
-            play(context, clientId, command, null, report);
-            return;
+        void complete(String message) {
+            if (!active.get()) return;
+            run();
+            report.accept(message);
         }
-        new Thread(() -> {
-            try {
-                String uri = resolve(context, clientId, command, playlistNames);
-                new Handler(Looper.getMainLooper()).post(() -> play(context, clientId, command, uri, report));
-            } catch (Exception error) {
-                new Handler(Looper.getMainLooper()).post(() -> report.accept(
-                        CommandFailure.report(CommandFailure.reason(error))));
-            }
-        }, "SpotifySearch").start();
+        void failed(Throwable error) { complete(CommandFailure.report(CommandFailure.reason(error))); }
+        @Override public void run() {
+            if (!active.compareAndSet(true, false)) return;
+            finished.set(true);
+            main.removeCallbacks(deadline);
+            if (search != null) search.interrupt();
+            if (remote != null) { SpotifyAppRemote.disconnect(remote); remote = null; }
+        }
     }
 
-    static void playPlaylist(Context context, String uri, Consumer<String> report) {
+    static Runnable execute(Context context, VoiceCommand command, List<String> playlistNames,
+                            Consumer<String> report) {
+        if (command.kind == VoiceCommand.Kind.OPEN) {
+            Intent launch = context.getPackageManager().getLaunchIntentForPackage("com.spotify.music");
+            if (launch == null) report.accept(CommandFailure.report(CommandFailure.Reason.REMOTE));
+            else {
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try { context.startActivity(launch); report.accept("Opening Spotify"); }
+                catch (RuntimeException error) { report.accept(CommandFailure.report(CommandFailure.reason(error))); }
+            }
+            return () -> { };
+        }
+        Operation operation = new Operation(report);
         String clientId = context.getSharedPreferences("spotify", Context.MODE_PRIVATE)
                 .getString("clientId", "").trim();
-        if (clientId.isEmpty()) { report.accept(CommandFailure.report(CommandFailure.Reason.AUTH)); return; }
-        play(context, clientId, VoiceCommand.selectedPlaylist(), uri, report);
+        if (clientId.isEmpty()) operation.complete(CommandFailure.report(CommandFailure.Reason.AUTH));
+        else if (command.kind != VoiceCommand.Kind.PLAY) play(context, clientId, command, null, operation);
+        else {
+            operation.search = new Thread(() -> {
+                try {
+                    String uri = resolve(context, clientId, command, playlistNames);
+                    operation.main.post(() -> play(context, clientId, command, uri, operation));
+                } catch (Exception error) { operation.main.post(() -> operation.failed(error)); }
+            }, "SpotifySearch");
+            operation.search.start();
+        }
+        return operation;
+    }
+
+    static Runnable playPlaylist(Context context, String uri, Consumer<String> report) {
+        Operation operation = new Operation(report);
+        String clientId = context.getSharedPreferences("spotify", Context.MODE_PRIVATE)
+                .getString("clientId", "").trim();
+        if (clientId.isEmpty()) operation.complete(CommandFailure.report(CommandFailure.Reason.AUTH));
+        else play(context, clientId, VoiceCommand.selectedPlaylist(), uri, operation);
+        return operation;
     }
 
     static Thread fetchPlaylists(Context context, Consumer<List<PlaylistBrowse.Entry>> ready,
@@ -121,36 +154,30 @@ final class SpotifyController {
     }
 
     private static void play(Context context, String clientId, VoiceCommand command,
-                             String uri, Consumer<String> report) {
-        AtomicBoolean finished = new AtomicBoolean();
+                             String uri, Operation operation) {
+        if (!operation.active.get()) return;
         connect(context, clientId, false, remote -> {
-            if (command.kind == VoiceCommand.Kind.PREVIOUS) {
-                previous(remote, report, finished);
-                return;
-            }
+            if (!operation.active.get()) { SpotifyAppRemote.disconnect(remote); return; }
+            operation.remote = remote;
+            if (command.kind == VoiceCommand.Kind.PREVIOUS) { previous(operation); return; }
             CallResult<Empty> result;
             switch (command.kind) {
                 case PAUSE: result = remote.getPlayerApi().pause(); break;
                 case RESUME: result = remote.getPlayerApi().resume(); break;
                 case NEXT: result = remote.getPlayerApi().skipNext(); break;
                 case PLAY: result = remote.getPlayerApi().play(uri); break;
-                default: SpotifyAppRemote.disconnect(remote); return;
+                default: operation.failed(new IllegalArgumentException()); return;
             }
-            result.setResultCallback(ignored -> {
-                if (command.kind == VoiceCommand.Kind.PLAY
-                        || command.kind == VoiceCommand.Kind.RESUME) {
-                    // Android 17 muted cold App Remote playback until Spotify received a media Play event.
-                    dispatchMediaPlay(context);
-                }
-                if (finished.compareAndSet(false, true)) report.accept("Spotify: " + command);
-                SpotifyAppRemote.disconnect(remote);
-            });
-            result.setErrorCallback(error -> {
-                if (finished.compareAndSet(false, true))
-                    report.accept(CommandFailure.report(CommandFailure.reason(error)));
-                SpotifyAppRemote.disconnect(remote);
-            });
-        }, report, finished);
+            result.setResultCallback(ignored -> operation.main.post(() -> {
+                if (!operation.active.get()) return;
+                try {
+                    if (command.kind == VoiceCommand.Kind.PLAY || command.kind == VoiceCommand.Kind.RESUME)
+                        dispatchMediaPlay(context);
+                    operation.complete("Spotify: " + command.kind);
+                } catch (RuntimeException error) { operation.failed(error); }
+            }));
+            result.setErrorCallback(error -> operation.main.post(() -> operation.failed(error)));
+        }, operation::complete, operation.finished);
     }
 
     static void dispatchMediaPlay(Context context) {
@@ -160,33 +187,23 @@ final class SpotifyController {
         Log.i("SpotifyWakeProbe", "MEDIA_PLAY_KEY_DISPATCHED");
     }
 
-    private static void previous(SpotifyAppRemote remote, Consumer<String> report,
-                                 AtomicBoolean finished) {
-        remote.getPlayerApi().getPlayerState().setResultCallback(state -> {
-            int skips = state.playbackPosition >= 3000 ? 2 : 1;
-            Log.i("SpotifyWakeProbe", "PREVIOUS_POSITION " + state.playbackPosition
-                    + " skips=" + skips);
-            skipPrevious(remote, skips, report, finished);
-        }).setErrorCallback(error -> {
-            if (finished.compareAndSet(false, true))
-                report.accept(CommandFailure.report(CommandFailure.reason(error)));
-            SpotifyAppRemote.disconnect(remote);
-        });
+    private static void previous(Operation operation) {
+        operation.remote.getPlayerApi().getPlayerState().setResultCallback(state -> operation.main.post(() -> {
+            if (!operation.active.get()) return;
+            try { skipPrevious(operation, state.playbackPosition >= 3000 ? 2 : 1); }
+            catch (RuntimeException error) { operation.failed(error); }
+        })).setErrorCallback(error -> operation.main.post(() -> operation.failed(error)));
     }
 
-    private static void skipPrevious(SpotifyAppRemote remote, int remaining,
-                                     Consumer<String> report, AtomicBoolean finished) {
-        remote.getPlayerApi().skipPrevious().setResultCallback(ignored -> {
-            if (remaining > 1) skipPrevious(remote, remaining - 1, report, finished);
-            else {
-                if (finished.compareAndSet(false, true)) report.accept("Spotify: PREVIOUS");
-                SpotifyAppRemote.disconnect(remote);
-            }
-        }).setErrorCallback(error -> {
-            if (finished.compareAndSet(false, true))
-                report.accept(CommandFailure.report(CommandFailure.reason(error)));
-            SpotifyAppRemote.disconnect(remote);
-        });
+    private static void skipPrevious(Operation operation, int remaining) {
+        if (!operation.active.get()) return;
+        operation.remote.getPlayerApi().skipPrevious().setResultCallback(ignored -> operation.main.post(() -> {
+            if (!operation.active.get()) return;
+            try {
+                if (remaining > 1) skipPrevious(operation, remaining - 1);
+                else operation.complete("Spotify: PREVIOUS");
+            } catch (RuntimeException error) { operation.failed(error); }
+        })).setErrorCallback(error -> operation.main.post(() -> operation.failed(error)));
     }
 
     private static void connect(Context context, String clientId, boolean showAuthorization,
@@ -379,6 +396,7 @@ final class SpotifyController {
     }
 
     private static JSONObject get(String token, Uri url) throws Exception {
+        if (Thread.currentThread().isInterrupted()) throw new java.io.InterruptedIOException();
         HttpURLConnection connection = (HttpURLConnection) new URL(url.toString()).openConnection();
         connection.setConnectTimeout(10000);
         connection.setReadTimeout(10000);

@@ -79,6 +79,7 @@ public class WakeService extends Service {
     private TextToSpeech spokenReply;
     private Runnable replyTimeout;
     private Thread playlistFetch;
+    private Runnable cancelOrdinaryPlayback;
     private Runnable cancelSpecialPlayback;
     private boolean specialPlaybackDispatched;
     private final Runnable wakeSummary = new Runnable() {
@@ -163,6 +164,7 @@ public class WakeService extends Service {
             getSharedPreferences("probe", MODE_PRIVATE).edit()
                     .putString("last", Instant.now() + " ERROR: " + type).apply();
             commandSequence++;
+            cancelOrdinaryPlayback();
             stopReply();
             playlists.clear();
             suspendRecognition();
@@ -423,6 +425,7 @@ public class WakeService extends Service {
                 DiagnosticHistory.record(this, "WAKE_IGNORED_DEBOUNCE");
                 return;
             }
+            cancelOrdinaryPlayback();
             lastWake = System.currentTimeMillis();
             listenFailures = 0;
             boolean locked = getSystemService(KeyguardManager.class).isKeyguardLocked();
@@ -454,6 +457,7 @@ public class WakeService extends Service {
     }
 
     private void recognitionFailed(String message) {
+        cancelOrdinaryPlayback();
         int request = ++commandSequence;
         if (beginReply(request, "RECOGNITION", true)) speakReply(request, message, false);
     }
@@ -463,6 +467,7 @@ public class WakeService extends Service {
     }
 
     private void executeCommand(VoiceCommand command, List<String> playlistNames) throws IOException {
+        cancelOrdinaryPlayback();
         command = command.forPlaylistContext(playlists.isActive(SystemClock.elapsedRealtime()));
         int request = ++commandSequence;
         if (focusLimit != null) { handler.removeCallbacks(focusLimit); focusLimit = null; }
@@ -540,8 +545,16 @@ public class WakeService extends Service {
             if (!commandStatus(commandLabel, message) && beginReply(request, commandLabel, true))
                 speakReply(request, "I couldn't do that. Check Spotify and its authorization in the app.", false);
         });
-        if (selected != null) SpotifyController.playPlaylist(this, selected.uri, report);
-        else SpotifyController.execute(this, command, playlistNames, report);
+        cancelOrdinaryPlayback = selected != null
+                ? SpotifyController.playPlaylist(this, selected.uri, report)
+                : SpotifyController.execute(this, command, playlistNames, report);
+    }
+
+    private void cancelOrdinaryPlayback() {
+        if (cancelOrdinaryPlayback != null) {
+            cancelOrdinaryPlayback.run();
+            cancelOrdinaryPlayback = null;
+        }
     }
 
     private boolean isReplying(int request) {
@@ -728,6 +741,7 @@ public class WakeService extends Service {
         if (retry != null) handler.removeCallbacks(retry);
         DiagnosticHistory.record(this, "SERVICE_STOP");
         commandSequence++;
+        cancelOrdinaryPlayback();
         stopReply();
         playlists.clear();
         suspendRecognition();
