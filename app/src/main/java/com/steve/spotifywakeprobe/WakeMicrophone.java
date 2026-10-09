@@ -1,6 +1,8 @@
 package com.steve.spotifywakeprobe;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -36,6 +38,8 @@ final class WakeMicrophone implements AutoCloseable {
     WakeMicrophone(Context context, Recognizer recognizer) throws IOException {
         this.context = context.getApplicationContext();
         this.recognizer = recognizer;
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
+            throw new SecurityException("Microphone permission required");
         int minimum = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT);
         if (minimum <= 0) throw new IOException("Wake microphone format unavailable");
