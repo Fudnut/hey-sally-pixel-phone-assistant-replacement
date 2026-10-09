@@ -103,10 +103,10 @@ Every row includes the full sequence: say **Hey Sally**, **wait for the beep**, 
 | Action | Preferred voice sequence | Other command forms after Hey Sally and the beep | Behavior / limits |
 | --- | --- | --- | --- |
 | Open Spotify | **Hey Sally** → **wait for beep** → `open Spotify` | None | Starts Spotify's activity. Showing it above the lock screen has not been established. |
-| Pause | **Hey Sally** → **wait for beep** → `pause` | `pause music` | Pauses playback. |
-| Resume | **Hey Sally** → **wait for beep** → `resume` | `resume music`, `continue` | Resumes an existing playback context. If there is nothing to resume, request a song or playlist or start Spotify manually. |
-| Next track | **Hey Sally** → **wait for beep** → `next song` | `next`, `next track`, `play next song`, `play next track`, `skip` | Skips the track; does not explicitly start paused playback. Use resume first. |
-| Previous track | **Hey Sally** → **wait for beep** → `previous song` | `previous`, `previous track`, `play previous song`, `play previous track` | Requests the preceding track, accounting for Spotify's restart-current-track behavior after three seconds. Does not explicitly resume paused playback. |
+| Pause | **Hey Sally** → **wait for beep** → `pause` | `pause music`, `pause the music`, `pause please`, `stop`, `stop music` | Pauses playback. |
+| Resume | **Hey Sally** → **wait for beep** → `resume` | `resume music`, `resume the music`, `continue` | Resumes an existing playback context. If there is nothing to resume, request a song or playlist or start Spotify manually. |
+| Next track | **Hey Sally** → **wait for beep** → `next song` | `next`, `next track`, `play next song`, `play next track`, `play the next song`, `skip`, `skip this song`, `next song please` | Skips the track; does not explicitly start paused playback. Use resume first. |
+| Previous track | **Hey Sally** → **wait for beep** → `previous song` | `previous`, `previous track`, `play previous song`, `play previous track`, `play the previous song`, `play the previous track` | Requests the preceding track, accounting for Spotify's restart-current-track behavior after three seconds. Does not explicitly resume paused playback. |
 | Named song | **Hey Sally** → **wait for beep** → `play song <title>` | `play the song <title>`; e.g. `play song Yesterday by The Beatles` | Searches for a song. Explicit song wording also handles a numeric title or a title that looks like a special command. |
 | Named artist | **Hey Sally** → **wait for beep** → `play artist <artist>` | None | Resolves the named artist and starts playback. |
 | Named saved playlist | **Hey Sally** → **wait for beep** → `play playlist <name>` | `play my playlist <name>` | Matches an exact saved-library playlist name; ambiguous/missing results can fail. |

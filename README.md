@@ -55,7 +55,7 @@ A public repository does not remove Spotify's API access restrictions. Developme
 | Say after the beep | Behavior |
 | --- | --- |
 | Open Spotify | Open the Spotify app |
-| Pause / Resume | Control current playback |
+| Pause / Stop / Resume | Control current playback; Stop pauses |
 | Next song / Previous song | Change track |
 | Play song Stand by Me | Search for a song |
 | Play artist The Beatles | Search for an artist |
@@ -68,6 +68,8 @@ A public repository does not remove Spotify's API access restrictions. Developme
 | Play Daily Mix two / Play Made For You 02 | Request Daily Mix 2; supported numbers are 1–6 |
 | Play radio followed by an artist | Match a recommended or saved Radio playlist |
 | Play Local Files | Use a native collection if exposed, otherwise a saved playlist named Local Files |
+
+Controls accept filler words such as `please`, `the` and `music`: for example, `pause the music`, `skip this song` and `play the next song`. Named song, artist and playlist requests retain their titles.
 
 Playlist numbering expires three minutes after the last successful readout. Outside an active browse, `play one` searches for the song named One; use `play song one` to request it while browsing. Names are matched within a bounded lookup, so not every available Spotify collection is guaranteed to be found.
 

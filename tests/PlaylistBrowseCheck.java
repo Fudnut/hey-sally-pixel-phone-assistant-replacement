@@ -23,6 +23,20 @@ public final class PlaylistBrowseCheck {
         command("play 1001", "PLAY_NUMBER", "1001");
         command("next", "NEXT", "");
         command("play next song", "NEXT", "");
+        command("open Spotify", "OPEN", "");
+        for (String phrase : new String[]{"pause", "pause music", "pause the music", "pause please", "stop", "stop music"})
+            command(phrase, "PAUSE", "");
+        for (String phrase : new String[]{"resume", "resume music", "resume the music", "continue"})
+            command(phrase, "RESUME", "");
+        for (String phrase : new String[]{"next song", "next song please", "skip this song", "play the next song", "play a next track"})
+            command(phrase, "NEXT", "");
+        for (String phrase : new String[]{"previous song", "previous track", "play previous song", "play the previous track"})
+            command(phrase, "PREVIOUS", "");
+        command("play song Please Please Me", "PLAY", "please please me");
+        command("play playlist The Music", "PLAY", "the music");
+        command("play song Next Song", "PLAY", "next song");
+        command("play music", "PLAY", "music");
+
         command("play song 2", "PLAY", "2");
         command("play playlist two", "PLAY", "two");
         command("play two hearts", "PLAY", "two hearts");

@@ -31,14 +31,16 @@ final class VoiceCommand {
         }
         if (listing.matches("(?:please )?more playlists?(?: please)?"))
             return new VoiceCommand(Kind.MORE_PLAYLISTS, "", words.equals("more playlists") ? "" : "normalized");
-        switch (words) {
+        String controls = words.replaceAll("\\b(?:please|the|music|this|a)\\b", " ")
+                .trim().replaceAll("\\s+", " ");
+        switch (controls) {
             case "open spotify": return new VoiceCommand(Kind.OPEN, "", "");
-            case "pause": case "pause music": return new VoiceCommand(Kind.PAUSE, "", "");
+            case "pause": case "stop": return new VoiceCommand(Kind.PAUSE, "", "");
             case "resume": case "resume music": case "continue":
             // Observed Vosk small-model transcripts for spoken “resume” on the test Pixel.
             case "regime": case "review": return new VoiceCommand(Kind.RESUME, "", "");
             case "next": case "next song": case "next track":
-            case "play next song": case "play next track": case "skip": return new VoiceCommand(Kind.NEXT, "", "");
+            case "play next song": case "play next track": case "skip": case "skip song": case "skip track": return new VoiceCommand(Kind.NEXT, "", "");
             case "previous": case "previous song": case "previous track":
             case "play previous song": case "play previous track": return new VoiceCommand(Kind.PREVIOUS, "", "");
             default: break;
