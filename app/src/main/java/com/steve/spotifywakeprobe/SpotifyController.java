@@ -48,7 +48,7 @@ final class SpotifyController {
             if (launch == null) { report.accept("Spotify app is not installed"); return; }
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try { context.startActivity(launch); report.accept("Opening Spotify"); }
-            catch (RuntimeException error) { report.accept("Could not open Spotify: " + error.getMessage()); }
+            catch (RuntimeException error) { report.accept("Could not open Spotify"); }
             return;
         }
         String clientId = context.getSharedPreferences("spotify", Context.MODE_PRIVATE)
@@ -64,7 +64,7 @@ final class SpotifyController {
                 new Handler(Looper.getMainLooper()).post(() -> play(context, clientId, command, uri, report));
             } catch (Exception error) {
                 new Handler(Looper.getMainLooper()).post(() -> report.accept(
-                        "Spotify lookup failed: " + error.getMessage()));
+                        "Spotify lookup failed"));
             }
         }, "SpotifySearch").start();
     }
@@ -144,7 +144,7 @@ final class SpotifyController {
             });
             result.setErrorCallback(error -> {
                 if (finished.compareAndSet(false, true))
-                    report.accept("Spotify command failed: " + error.getMessage());
+                    report.accept("Spotify command failed");
                 SpotifyAppRemote.disconnect(remote);
             });
         }, report, finished);
@@ -166,7 +166,7 @@ final class SpotifyController {
             skipPrevious(remote, skips, report, finished);
         }).setErrorCallback(error -> {
             if (finished.compareAndSet(false, true))
-                report.accept("Spotify player state failed: " + error.getMessage());
+                report.accept("Spotify player state failed");
             SpotifyAppRemote.disconnect(remote);
         });
     }
@@ -181,7 +181,7 @@ final class SpotifyController {
             }
         }).setErrorCallback(error -> {
             if (finished.compareAndSet(false, true))
-                report.accept("Spotify previous failed: " + error.getMessage());
+                report.accept("Spotify previous failed");
             SpotifyAppRemote.disconnect(remote);
         });
     }
@@ -191,19 +191,43 @@ final class SpotifyController {
                                 AtomicBoolean finished) {
         ConnectionParams params = new ConnectionParams.Builder(clientId)
                 .setRedirectUri(SpotifyOAuth.REDIRECT).showAuthView(showAuthorization).build();
-        SpotifyAppRemote.connect(context, params, new Connector.ConnectionListener() {
-            @Override public void onConnected(SpotifyAppRemote remote) { ready.accept(remote); }
-            @Override public void onFailure(Throwable error) {
-                if (!finished.compareAndSet(false, true)) {
-                    Log.i("SpotifyWakeProbe", "App Remote disconnected after command completion");
-                    return;
-                }
-                Log.e("SpotifyWakeProbe", "Spotify App Remote connection failed: "
-                        + error.getClass().getSimpleName());
-                report.accept("Spotify App Remote failed: "
-                        + error.getClass().getSimpleName() + ": " + error.getMessage());
+        Handler main = new Handler(Looper.getMainLooper());
+        AtomicBoolean connecting = new AtomicBoolean(true);
+        Runnable timeout = () -> {
+            if (connecting.compareAndSet(true, false) && finished.compareAndSet(false, true)) {
+                Log.w("SpotifyWakeProbe", "SPOTIFY_CONNECT_TIMEOUT");
+                report.accept("Spotify connection timed out");
             }
-        });
+        };
+        // Manual authorization needs time for consent; ordinary playback fails promptly.
+        main.postDelayed(timeout, showAuthorization ? 120000 : 12000);
+        Connector.ConnectionListener listener = new Connector.ConnectionListener() {
+            @Override public void onConnected(SpotifyAppRemote remote) {
+                main.post(() -> {
+                    if (!connecting.compareAndSet(true, false) || finished.get()) {
+                        SpotifyAppRemote.disconnect(remote);
+                        return;
+                    }
+                    main.removeCallbacks(timeout);
+                    try { ready.accept(remote); }
+                    catch (RuntimeException error) {
+                        SpotifyAppRemote.disconnect(remote);
+                        onFailure(error);
+                    }
+                });
+            }
+            @Override public void onFailure(Throwable error) {
+                main.post(() -> {
+                    connecting.set(false);
+                    main.removeCallbacks(timeout);
+                    if (!finished.compareAndSet(false, true)) return;
+                    Log.e("SpotifyWakeProbe", "SPOTIFY_CONNECT_ERROR");
+                    report.accept("Spotify connection failed");
+                });
+            }
+        };
+        try { SpotifyAppRemote.connect(context, params, listener); }
+        catch (RuntimeException error) { listener.onFailure(error); }
     }
 
     private static String resolve(Context context, String clientId, VoiceCommand command,

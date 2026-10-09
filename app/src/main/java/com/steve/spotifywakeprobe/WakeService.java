@@ -523,9 +523,11 @@ public class WakeService extends Service {
             };
             handler.postDelayed(focusLimit, 15000);
         }
-        java.util.function.Consumer<String> report = message -> {
-            if (!destroyed && request == commandSequence) commandStatus(commandLabel, message);
-        };
+        java.util.function.Consumer<String> report = message -> handler.post(() -> {
+            if (destroyed || request != commandSequence) return;
+            if (!commandStatus(commandLabel, message) && beginReply(request, commandLabel, true))
+                speakReply(request, "I couldn't do that. Check Spotify and its authorization in the app.", false);
+        });
         if (selected != null) SpotifyController.playPlaylist(this, selected.uri, report);
         else SpotifyController.execute(this, command, playlistNames, report);
     }
@@ -654,7 +656,7 @@ public class WakeService extends Service {
         if (spokenReply != null) { spokenReply.stop(); spokenReply.shutdown(); spokenReply = null; }
     }
 
-    private void commandStatus(String commandLabel, String message) {
+    private boolean commandStatus(String commandLabel, String message) {
         boolean success = message.startsWith("Spotify: ") || "Opening Spotify".equals(message);
         String status = commandLabel + (success ? " completed" : " failed");
         if (!success && message.contains("Authorize")) status += "; authorize Spotify in the app";
@@ -664,6 +666,7 @@ public class WakeService extends Service {
                 .putString("lastCommand", Instant.now() + " " + status).apply();
         finishCommandFocus();
         update(success ? "Listening for Hey Sally" : "Command failed; open app");
+        return success;
     }
 
     private void finishCommandFocus() {
