@@ -57,3 +57,12 @@ Do not copy private handoffs, diagnostics, registration values, keys, local cach
 - Verified the repository is public, Issues are enabled and no Releases are published. Public APK release signing, packaged dependency notices and exact-artifact/device verification remain outstanding. No APK publication, key creation, runtime changes or repository-settings changes were performed.
 
 - Command-guide clarification: all 17 preferred command rows now show Hey Sally → wait for beep → command; the alternative-forms heading also states the wake sequence.
+
+## Public APK prerelease - 10 October 2026
+
+- Prepared 0.2.1-alpha.1 (versionCode 3), ARM64 Android 14+, non-debuggable release variant; no playback/wake behavior changes. Package and app label remain unchanged.
+- Dedicated public-release signing key is local/ignored, separate from private trial signing. Password is protected with Windows user encryption, never committed/published. RELEASE_SIGNING.md records public certificate fingerprints, update continuity and secure recoverable backup requirement.
+- INSTALL.md gives a direct APK download, phone-first install, own Spotify Developer Client ID setup, commands, privacy and bug reporting. README links it; bug/PR templates added.
+- Licence/notice texts embedded in APK assets and bundled as a release ZIP; inventory includes Gradle runtime dependencies and conservative native inputs. Full source provenance in assets/third-party/SOURCES.txt. Exact upstream native build revisions are not proved by the Maven artifact.
+- Checks: Java command/wake/language/playlist checks pass; release assembly and Android vital lint pass after fetching previously uncached lint dependencies. Signed APK certificate, alignment, version, ARM64 ABI, non-debuggable manifest, model/notices and public registration default reviewed. Existing XML/deprecation/native-strip warnings remain.
+- Public release APK is not installed on the existing Pixel trial because the certificates differ. Exact-release fresh installation, Spotify registration and real audible playback remain unverified; prerelease notes disclose this. Existing phone installation/history were preserved. Initial user confirmed Hey Sally/resume/next on the public-source debug trial, with one repeated wake; no new screen-off result is inferred.

@@ -1,0 +1,17 @@
+Spotify-LICENSE.txt https://raw.githubusercontent.com/spotify/android-sdk/v0.8.0-appremote_v2.1.0-auth/LICENSE
+Spotify-NOTICE.txt https://raw.githubusercontent.com/spotify/android-sdk/v0.8.0-appremote_v2.1.0-auth/NOTICE
+Gson-LICENSE.txt https://raw.githubusercontent.com/google/gson/gson-parent-2.13.2/LICENSE
+JNA-LICENSE.txt https://raw.githubusercontent.com/java-native-access/jna/5.18.1/LICENSE
+JNA-APACHE-2.0.txt https://raw.githubusercontent.com/java-native-access/jna/5.18.1/AL2.0
+libffi-LICENSE.txt https://raw.githubusercontent.com/java-native-access/jna/5.18.1/native/libffi/LICENSE
+Vosk-LICENSE.txt https://raw.githubusercontent.com/alphacep/vosk-api/master/COPYING
+Kaldi-LICENSE.txt https://raw.githubusercontent.com/alphacep/kaldi/vosk-android/COPYING
+OpenFST-LICENSE.txt https://raw.githubusercontent.com/alphacep/openfst/master/COPYING
+OpenBLAS-LICENSE.txt https://raw.githubusercontent.com/OpenMathLib/OpenBLAS/v0.3.20/LICENSE
+CLAPACK-LICENSE.txt https://raw.githubusercontent.com/alphacep/clapack/v3.2.1/COPYING
+libf2c-NOTICE.txt https://raw.githubusercontent.com/alphacep/clapack/v3.2.1/F2CLIBS/libf2c/Notice
+Kotlin-LICENSE.txt https://raw.githubusercontent.com/JetBrains/kotlin/v2.2.10/license/LICENSE.txt
+JetBrains-annotations-LICENSE.txt https://raw.githubusercontent.com/JetBrains/java-annotations/master/LICENSE.txt
+ErrorProne-LICENSE.txt https://raw.githubusercontent.com/google/error-prone/v2.41.0/COPYING
+LLVM-libcxx-LICENSE.txt https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-17.0.6/libcxx/LICENSE.TXT
+Formatting: trailing spaces and excess final blank lines normalized where needed; licence text unchanged.

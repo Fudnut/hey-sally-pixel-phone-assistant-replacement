@@ -8,9 +8,16 @@ android {
         applicationId 'com.steve.spotifywakeprobe'
         minSdk 34
         targetSdk 37
-        versionCode 2
-        versionName '0.2-alpha'
+        versionCode 3
+        versionName '0.2.1-alpha.1'
         ndk { abiFilters 'arm64-v8a' }
+    }
+
+    buildTypes {
+        release {
+            debuggable false
+            minifyEnabled false
+        }
     }
 
     compileOptions {

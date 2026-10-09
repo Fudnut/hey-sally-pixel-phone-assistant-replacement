@@ -1,6 +1,6 @@
 # Hey Sally: installation, commands, testing and GitHub distribution
 
-Updated 10 October 2026. App version: `0.2-alpha` (`versionCode 2`).
+Updated 10 October 2026. App version: `0.2.1-alpha.1` (`versionCode 3`).
 
 ## Overview
 
@@ -8,7 +8,7 @@ Say **Hey Sally**, wait for the ready beep, then speak one Spotify command. Use 
 
 The Android app is still called **Spotify Wake Probe** and uses package `com.steve.spotifywakeprobe`. Hey Sally is the current wake phrase; Hey Spotify is no longer accepted by the exact text matcher. This remains an experimental Spotify controller, not a general phone assistant or an official Spotify product.
 
-The source is public, Issues are enabled, and contributions can be proposed now. **No GitHub Release or downloadable release APK is published as of this update.** The locally installed test APK is a debug build; it is not the planned public distribution artifact.
+The source is public, Issues are enabled, and contributions can be proposed now. A maintainer-signed **0.2.1-alpha.1** prerelease APK is offered with [phone installation instructions](INSTALL.md). The existing locally installed personal trial remains a debug build with a different certificate; it was not replaced by the public APK.
 
 The user confirmed Hey Sally activation, audible resume and audible next-song playback on 10 October. One next-song test needed the wake phrase twice. Those short results do not establish long-duration reliability; the screen/lock state was not separately confirmed in that follow-up. Earlier feature tests used the previous wake phrase.
 
@@ -21,7 +21,7 @@ The user confirmed Hey Sally activation, audible resume and audible next-song pl
 - [Everyday use and troubleshooting](#everyday-use-and-troubleshooting)
 - [Test and report bugs](#test-and-report-bugs)
 - [Contribute a pull request](#contribute-a-pull-request)
-- [What remains before a downloadable GitHub test release](#what-remains-before-a-downloadable-github-test-release)
+- [GitHub prerelease status](#github-prerelease-status)
 - [Privacy and limits](#privacy-and-limits)
 
 ## Requirements
@@ -38,7 +38,7 @@ Spotify currently permits up to five authenticated users per development app, wi
 
 ### Option A: download an APK when a test release is available
 
-This route is planned, not available at the date above.
+Use the [direct APK download and setup guide](INSTALL.md).
 
 1. Open the project's [Releases page](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases).
 2. Choose the intended prerelease and read its compatibility, setup and known-issue notes.
@@ -151,7 +151,7 @@ For Local Files, first make the tracks play normally inside Spotify on the phone
 
 ## Test and report bugs
 
-Open [GitHub Issues](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/issues) and create a bug report. A GitHub account is needed to submit it. Issues are enabled; dedicated issue templates are not yet installed.
+Open [GitHub Issues](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/issues) and create a bug report. A GitHub account is needed to submit it. Issues are enabled; a bug-report template is supplied.
 
 Include:
 
@@ -185,30 +185,25 @@ While stationary, record observations for: wake with music paused and playing; p
 
 No contributor receives direct write access merely by submitting a PR. Maintainers review and merge contributions. The project's original code is MIT licensed; dependencies keep their own terms. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## What remains before a downloadable GitHub test release
+## GitHub prerelease status
 
-This is a release-preparation checklist, not a statement that these steps have been completed.
+The first precompiled APK is **0.2.1-alpha.1**, signed with a dedicated public-release certificate. [INSTALL.md](INSTALL.md) is the phone-first download/setup guide; [RELEASE_SIGNING.md](RELEASE_SIGNING.md) identifies the public certificate and update policy.
 
-| Work | Current state | Needed for the first public test APK |
-| --- | --- | --- |
-| Public source and collaboration | Public repository; Issues enabled; `main` contains the Hey Sally change | Already usable for source downloads, bug reports and PRs. Add a concise bug template, PR template and CONTRIBUTING link to make submissions consistent. |
-| Tester Spotify access | No prefilled Client ID; own-ID setup exists | Choose/document own-Client-ID testing as the initial path. Verify a fresh Developer app and clean account setup end to end. A shared development Client ID cannot provide unrestricted public access. |
-| Public APK signing | Local builds use debug signing; private-key-signed device APK was for a personal test | Create a dedicated durable public-release signing key, keep it outside Git, back it up securely, and configure a non-debuggable release build. Do not distribute the personal debug-signed artifact as the release. Publish the release certificate fingerprint needed for registration. |
-| Version and identity | App label Spotify Wake Probe; package `com.steve.spotifywakeprobe`; versionCode 2 / 0.2-alpha | Decide whether to retain identity. Choose the first release version and increment versionCode for updates. With a different key under the same package, existing private-trial installs need an explicit migration decision; do not uninstall them automatically. |
-| Binary dependency notices | Source MIT licence and upstream links exist; table explicitly incomplete for APK distribution | Inventory the actual APK's direct/transitive/native dependencies and embedded Vosk model. Include required complete licence/copyright/NOTICE texts, review Spotify SDK terms, and provide notices in/alongside the release artifact as appropriate. |
-| Release build verification | Debug APK and Java checks pass using shared tools/cache | Build the exact release variant, verify its signature/non-debuggable flag/version/ABI, inspect contents for private values/probe activities, and test clean installation plus same-key update on a phone. Test fresh Spotify setup and real audible playback. |
-| Current wake and reliability | Hey Sally, resume and next have short user confirmation; one repeated wake | Repeat locked/screen-off and music-playing wake tests with the exact signed release artifact. Record known false/missed wakes, unmeasured battery/coexistence and device limits in prerelease notes. A long-term reliability claim is not required to label it experimental, but the limits must be clear. |
-| Release download | No published GitHub Releases | Create a tag for the verified commit and a GitHub **prerelease**. Attach the signed APK, SHA256SUMS file, dependency notices and notes covering setup, changes, known issues and bug-report link. Review the exact assets before publication. |
-| Maintenance | Manual local checks exist; no `.github` workflows/templates currently present | Recommended: CI for the Java checks and Android build on PRs, review before merging, and a simple versioned release process. Keep signing credentials away from untrusted PR jobs. CI is helpful; it is not required for a first manually verified prerelease. |
+| Item | State for this alpha |
+| --- | --- |
+| Public source and collaboration | Public repository, Issues enabled, bug-report and PR templates supplied. Forks and PRs are welcome. |
+| APK | Non-debuggable ARM64 release build, Android 14+, versionCode 3; signature and alignment verified. |
+| Signing | Dedicated release key kept locally outside Git; public certificate fingerprint supplied for Spotify setup. Maintainer must retain a recoverable key/credential backup for future updates. |
+| Dependency notices | Full fetched licence/notice texts embedded in assets and supplied in a notices ZIP. Runtime/native inventory and provenance documented in THIRD_PARTY_NOTICES.md. |
+| Downloads | Versioned APK, checksums, notices and install guide are prerelease assets. Source-code ZIPs are not installable APKs. |
+| Spotify access | Each tester configures their own Developer Client ID or an explicitly arranged allowlisted tester app. No shared registration is embedded. |
+| Checks | Java command/wake/language/playlist checks and release build including Android vital lint pass. Signature, package/version/ABI, non-debuggable manifest and notice assets verified. |
+| Device limits | Public certificate APK not installed over the differently signed private trial. Fresh release installation/registration and exact-artifact audio tests remain unverified. Debug-build Hey Sally/resume/next have short user confirmation; one repeated wake was reported. |
+| Maintenance | No CI yet. Manual verified prereleases are sufficient initially; broader device, battery, false-wake and call/camera/recorder checks remain. |
 
-### Recommended release route
+A precompiled APK removes the need for testers to compile Android code, but Spotify registration/authorization remains necessary. A development Client ID cannot offer unrestricted access to the public. Broader shared access needs a separate plan under [Spotify's current rules](https://developer.spotify.com/documentation/web-api/concepts/quota-modes).
 
-Start with a **maintainer-signed experimental APK plus each tester's own Spotify Client ID**. This removes the need for testers to compile Android code, although Spotify registration/authorization remains necessary. A small specifically allowlisted tester group is another option. Do not advertise unrestricted one-tap setup through the maintainer's development app.
-
-Broader shared Spotify access would require a separate access/approval plan under Spotify's current rules; publishing an APK does not grant it. See [quota modes](https://developer.spotify.com/documentation/web-api/concepts/quota-modes).
-
-A manual prerelease is sufficient initially: verify one release build, attach the approved assets to a tagged GitHub prerelease, and link its installation instructions and Issues page. Full release automation can follow once the signing/update process is proven. The present task adds documentation; it does not generate a release key, change app identity, publish an APK or enable CI/templates.
-
+Future releases must keep the chosen public certificate/package and increase versionCode. Do not generate a new key for every release or publish signing material. Review exact assets, tag their source commit and attach them to a GitHub prerelease. CI can follow after the manual release path is proven.
 ## Privacy and limits
 
 Wake audio is processed locally with Vosk and is not saved by app-owned code. Command audio may be sent to Android's speech provider; playlist names go to the configured TTS engine, whose voice may use network processing. Named searches/authorization go to Spotify. There is no Gemini connection or project-operated backend. Tokens are encrypted using Android Keystore; backup and device transfer are disabled.

@@ -21,6 +21,8 @@ These libraries and the model are not checked into this source repository. Their
 
 The SDK download script checks SHA-256 `b5a6dd880eaf01f63a871cba9ef7af77c341f8a94ffc8fdf2e9021f9a9d4c198`; the model download script pins its own SHA-256. Gradle downloads the other dependencies from the configured repositories.
 
-This is a source-only release preparation. Local debug APKs are build outputs, not part of the public source tree. Before distributing an APK, review the actual packaged native/transitive dependencies and include their complete required licence/notice texts. This table is not a complete APK licence manifest.
+The alpha APK includes licence/notice texts in [app/src/main/assets/third-party](app/src/main/assets/third-party), also supplied as a GitHub release notices ZIP. The inventory below covers the Gradle release runtime classpath and conservatively includes native build inputs; links and fetched text provenance are recorded in SOURCES.txt. JNA is redistributed under its Apache 2.0 option.
+
+Release runtime inventory: Spotify App Remote 0.8.0; Gson 2.13.2; Error Prone annotations 2.41.0; JNA 5.18.1 (including libffi); Vosk Android 0.3.75; Kotlin stdlib 2.2.10; JetBrains annotations 13.0; and the embedded Vosk small US English 0.15 model (Apache 2.0, with Vosk licence text included). Spotify upstream NOTICE includes its Jackson/Gson notices. Vosk Android upstream build inputs include Kaldi, OpenFST, OpenBLAS 0.3.20, CLAPACK/libf2c and statically linked C++ runtime; their licence texts are included. Exact internal native source revisions are not encoded by the Maven artifact; these notices are preserved conservatively rather than claiming a source reproducibility audit.
 
 Spotify is a trademark of Spotify AB. This is an independent experimental project, not an official Spotify product.

@@ -6,6 +6,12 @@ Wake recognition runs locally with Vosk. After the ready beep, Android's configu
 
 For complete installation steps, all command forms, bug reports, pull requests and the APK release checklist, read [TESTING_AND_DISTRIBUTION.md](TESTING_AND_DISTRIBUTION.md).
 
+## Download the test APK
+
+[Download Hey Sally 0.2.1-alpha.1 for ARM64 Android](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.1/Hey-Sally-0.2.1-alpha.1-arm64.apk). Read [INSTALL.md](INSTALL.md) for phone installation, your own Spotify Developer setup, commands and bug reports. This is an experimental prerelease for Android 14+, not a Play Store release. No compilation is needed; Spotify registration/authorization is still required.
+
+The public APK has a separate signing identity from private trial/self-built APKs; do not uninstall an existing trial to resolve a signature conflict without saving its diagnostics and choosing a migration. See [RELEASE_SIGNING.md](RELEASE_SIGNING.md).
+
 ## Status and requirements
 
 - Prototype tested on a Pixel 8 Pro running Android 17. Other phones and long-term reliability are not established.
@@ -31,7 +37,7 @@ $env:ANDROID_HOME = 'C:\path\to\Android\Sdk'
 
 Gradle uses your machine's standard debug signing key. No personal signing key or Spotify Client ID is included. The APK is created at `app/build/outputs/apk/debug/app-debug.apk`. On other platforms, use `./gradlew` and PowerShell (`pwsh`) for the download scripts.
 
-Install the debug APK using Android's normal developer tools. A build signed with a different key cannot update an existing installation of the same package. Do not uninstall an existing trial merely to test this copy: uninstalling loses its settings and private history. This source preparation does not include a production APK or release signing configuration.
+Install the debug APK using Android's normal developer tools. A build signed with a different key cannot update an existing installation of the same package. Do not uninstall an existing trial merely to test this copy: uninstalling loses its settings and private history. The public prerelease uses a dedicated release certificate; local debug builds remain separate.
 
 ## Configure Spotify and Android
 
