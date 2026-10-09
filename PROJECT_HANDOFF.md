@@ -55,3 +55,5 @@ Do not copy private handoffs, diagnostics, registration values, keys, local cach
 
 - Added TESTING_AND_DISTRIBUTION.md with all current commands/aliases, installation/setup, troubleshooting, privacy, diagnostic bug reporting, PR steps and a concrete first-prerelease checklist. README links to it.
 - Verified the repository is public, Issues are enabled and no Releases are published. Public APK release signing, packaged dependency notices and exact-artifact/device verification remain outstanding. No APK publication, key creation, runtime changes or repository-settings changes were performed.
+
+- Command-guide clarification: all 17 preferred command rows now show Hey Sally → wait for beep → command; the alternative-forms heading also states the wake sequence.

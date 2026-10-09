@@ -98,27 +98,27 @@ After reboot, unlock once so the offline model in credential-protected storage i
 
 ## Every current command
 
-Speak these **after Hey Sally and the beep**, not as one uninterrupted wake-plus-command sentence. Examples below are suggestions, not guaranteed search results. Names in angle brackets are replaced by your own request.
+Every row includes the full sequence: say **Hey Sally**, **wait for the beep**, then speak the command. Use a fresh wake for every request. Alternate command forms use the same Hey Sally → beep sequence. Examples below are suggestions, not guaranteed search results. Names in angle brackets are replaced by your own request.
 
-| Action | Preferred phrase | Other accepted forms | Behavior / limits |
+| Action | Preferred voice sequence | Other command forms after Hey Sally and the beep | Behavior / limits |
 | --- | --- | --- | --- |
-| Open Spotify | `open Spotify` | None | Starts Spotify's activity. Showing it above the lock screen has not been established. |
-| Pause | `pause` | `pause music` | Pauses playback. |
-| Resume | `resume` | `resume music`, `continue` | Resumes an existing playback context. If there is nothing to resume, request a song or playlist or start Spotify manually. |
-| Next track | `next song` | `next`, `next track`, `play next song`, `play next track`, `skip` | Skips the track; does not explicitly start paused playback. Use resume first. |
-| Previous track | `previous song` | `previous`, `previous track`, `play previous song`, `play previous track` | Requests the preceding track, accounting for Spotify's restart-current-track behavior after three seconds. Does not explicitly resume paused playback. |
-| Named song | `play song <title>` | `play the song <title>`; e.g. `play song Yesterday by The Beatles` | Searches for a song. Explicit song wording also handles a numeric title or a title that looks like a special command. |
-| Named artist | `play artist <artist>` | None | Resolves the named artist and starts playback. |
-| Named saved playlist | `play playlist <name>` | `play my playlist <name>` | Matches an exact saved-library playlist name; ambiguous/missing results can fail. |
-| General music request | `play <name>` | None | Special destinations and playlist numbers are checked first; otherwise tries an exact artist match, then a track search. Prefer explicit song/artist/playlist wording. |
-| List saved playlists | `list my playlists` | `list playlists`; singular `playlist`, split `play lists`/`play list`, punctuation and optional `please` are accepted | Reads five numbered names. Regular library playlists only; Liked Songs is a separate command. |
-| Next playlist page | `more playlists` | Singular/split playlist wording, punctuation and optional `please` | Reads the next five names with continuing numbers. `next` still means next track. |
-| Choose announced playlist | `play two` | `play number two`, `play 2`, `play number 2`; use another announced number | Selects only a number already read from the current playlist snapshot. |
-| Liked Songs | `play Liked Songs` | `play my Liked Songs` | Plays Spotify's exposed collection if available. |
-| Spotify DJ | `play DJ` | `play D J`, `play Spotify DJ`, `play the DJ` | Requests the actual DJ experience if exposed for the account. |
-| Daily Mix | `play Daily Mix two` | `play Made For You two`, `play Daily Mix 2`, `play Made For You 02`; optional `number`, `zero` or `oh` before a valid number | Numbers 1–6 only. Made For You means Daily Mix here, not every personalized Spotify collection. |
-| Artist Radio | `play radio <artist>` | `play <artist> radio`, `play radio by <artist>`, `play radio for <artist>`, `play radio artist <artist>` | Matches an exact recommended or saved Radio playlist; does not create arbitrary new artist stations. |
-| Local Files | `play Local Files` | `play my Local Files` | Uses the native collection if exposed, otherwise an exact saved playlist named Local Files. Real local-track fallback playback remains untested. |
+| Open Spotify | **Hey Sally** → **wait for beep** → `open Spotify` | None | Starts Spotify's activity. Showing it above the lock screen has not been established. |
+| Pause | **Hey Sally** → **wait for beep** → `pause` | `pause music` | Pauses playback. |
+| Resume | **Hey Sally** → **wait for beep** → `resume` | `resume music`, `continue` | Resumes an existing playback context. If there is nothing to resume, request a song or playlist or start Spotify manually. |
+| Next track | **Hey Sally** → **wait for beep** → `next song` | `next`, `next track`, `play next song`, `play next track`, `skip` | Skips the track; does not explicitly start paused playback. Use resume first. |
+| Previous track | **Hey Sally** → **wait for beep** → `previous song` | `previous`, `previous track`, `play previous song`, `play previous track` | Requests the preceding track, accounting for Spotify's restart-current-track behavior after three seconds. Does not explicitly resume paused playback. |
+| Named song | **Hey Sally** → **wait for beep** → `play song <title>` | `play the song <title>`; e.g. `play song Yesterday by The Beatles` | Searches for a song. Explicit song wording also handles a numeric title or a title that looks like a special command. |
+| Named artist | **Hey Sally** → **wait for beep** → `play artist <artist>` | None | Resolves the named artist and starts playback. |
+| Named saved playlist | **Hey Sally** → **wait for beep** → `play playlist <name>` | `play my playlist <name>` | Matches an exact saved-library playlist name; ambiguous/missing results can fail. |
+| General music request | **Hey Sally** → **wait for beep** → `play <name>` | None | Special destinations and playlist numbers are checked first; otherwise tries an exact artist match, then a track search. Prefer explicit song/artist/playlist wording. |
+| List saved playlists | **Hey Sally** → **wait for beep** → `list my playlists` | `list playlists`; singular `playlist`, split `play lists`/`play list`, punctuation and optional `please` are accepted | Reads five numbered names. Regular library playlists only; Liked Songs is a separate command. |
+| Next playlist page | **Hey Sally** → **wait for beep** → `more playlists` | Singular/split playlist wording, punctuation and optional `please` | Reads the next five names with continuing numbers. `next` still means next track. |
+| Choose announced playlist | **Hey Sally** → **wait for beep** → `play two` | `play number two`, `play 2`, `play number 2`; use another announced number | Selects only a number already read from the current playlist snapshot. |
+| Liked Songs | **Hey Sally** → **wait for beep** → `play Liked Songs` | `play my Liked Songs` | Plays Spotify's exposed collection if available. |
+| Spotify DJ | **Hey Sally** → **wait for beep** → `play DJ` | `play D J`, `play Spotify DJ`, `play the DJ` | Requests the actual DJ experience if exposed for the account. |
+| Daily Mix | **Hey Sally** → **wait for beep** → `play Daily Mix two` | `play Made For You two`, `play Daily Mix 2`, `play Made For You 02`; optional `number`, `zero` or `oh` before a valid number | Numbers 1–6 only. Made For You means Daily Mix here, not every personalized Spotify collection. |
+| Artist Radio | **Hey Sally** → **wait for beep** → `play radio <artist>` | `play <artist> radio`, `play radio by <artist>`, `play radio for <artist>`, `play radio artist <artist>` | Matches an exact recommended or saved Radio playlist; does not create arbitrary new artist stations. |
+| Local Files | **Hey Sally** → **wait for beep** → `play Local Files` | `play my Local Files` | Uses the native collection if exposed, otherwise an exact saved playlist named Local Files. Real local-track fallback playback remains untested. |
 
 The parser also tolerates the observed fallback transcripts `regime` and `review` as resume, and some number homophones such as `to`/`too` for two. These are recognition accommodations, not recommended commands. There is no current voice command for volume, shuffle, repeat, queue editing, phone calls, messages, changing the wake phrase or stopping the probe.
 
