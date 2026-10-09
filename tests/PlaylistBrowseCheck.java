@@ -76,6 +76,15 @@ public final class PlaylistBrowseCheck {
         command("play song 2", "PLAY", "2");
         command("play playlist two", "PLAY", "two");
         command("play two hearts", "PLAY", "two hearts");
+        for (String title : new String[]{"number of the beast", "number one crush", "number 9 dream"}) {
+            command("play " + title, "PLAY", title);
+            for (boolean browseActive : new boolean[]{false, true}) {
+                VoiceCommand request = VoiceCommand.parse("play " + title).forPlaylistContext(browseActive);
+                if (request.kind != VoiceCommand.Kind.PLAY || !request.query.equals(title)
+                        || !request.type.equals("auto"))
+                    throw new AssertionError("Number-prefixed titles must retain the full search query in either browse context");
+            }
+        }
         command("play -", "PLAY", "-");
         command("play --", "PLAY", "--");
         command("play song Stand by Me", "PLAY", "stand by me");

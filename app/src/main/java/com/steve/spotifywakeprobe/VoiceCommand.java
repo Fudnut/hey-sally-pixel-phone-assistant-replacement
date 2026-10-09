@@ -58,7 +58,6 @@ final class VoiceCommand {
             if (special != null) return special;
             Integer number = spokenNumber(query.startsWith("number ") ? query.substring(7) : query);
             if (number != null) return new VoiceCommand(Kind.PLAY_NUMBER, number.toString(), "", query);
-            if (query.startsWith("number ")) return null;
         }
         if (query.isEmpty() || (("song".equals(type) || "auto".equals(type)) && query.startsWith("by "))) return null;
         return new VoiceCommand(Kind.PLAY, query, type);

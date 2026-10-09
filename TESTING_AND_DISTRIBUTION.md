@@ -122,7 +122,7 @@ The table describes the current alpha.2 source. The published alpha.1 APK uses t
 | Artist Radio | **Hey Sally** → **wait for beep** → `play radio <artist>` | `play <artist> radio`, `play radio by <artist>`, `play radio for <artist>`, `play radio artist <artist>` | Matches an exact recommended or saved Radio playlist; does not create arbitrary new artist stations. |
 | Local Files | **Hey Sally** → **wait for beep** → `play Local Files` | `play my Local Files` | Uses the native collection if exposed, otherwise an exact saved playlist named Local Files. Real local-track fallback playback remains untested. |
 
-The parser also tolerates the observed fallback transcripts `regime` and `review` as resume, and some number homophones such as `to`/`too` for two. These are recognition accommodations, not recommended commands. There is no current voice command for volume, shuffle, repeat, queue editing, phone calls, messages, changing the wake phrase or stopping the probe.
+A request such as `play number of the beast` or `play number 9 dream` searches the full title; `number` selects a playlist only when the whole remainder is a number. The parser also tolerates the observed fallback transcripts `regime` and `review` as resume, and some number homophones such as `to`/`too` for two. These are recognition accommodations, not recommended commands. There is no current voice command for volume, shuffle, repeat, queue editing, phone calls, messages, changing the wake phrase or stopping the probe.
 
 ### Browse and select playlists
 
