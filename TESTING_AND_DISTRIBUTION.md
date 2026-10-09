@@ -167,6 +167,8 @@ Include:
 
 Open the app, tap **Refresh status**, then **Copy diagnostic history**. Paste into a private note, review it, and attach only relevant redacted events to an issue. The app stores up to 1,024 events; busy use can overwrite earlier entries. Copy history each evening during a multi-day trial. **Start fresh diagnostic trial** clears it, so save any history you need first. Do not reset it merely because a command failed.
 
+In alpha.2 source builds, `WAKE_RESULT class=accepted|other|empty ms=...` records each finalized wake result. Accepted means an exact wake-phrase match; `WAKE_IGNORED_DEBOUNCE` then identifies one rejected by the existing five-second gate. The milliseconds measure captured audio since recording started or the preceding finalized result, including silence; they are not latency from when you spoke the wake phrase. No recognized words or audio are stored.
+
 Diagnostics omit recognized words, so add your intended command separately if comfortable. A silent log cannot prove a missed wake; your observation is needed. Heartbeats are scheduled every 30 minutes but can be delayed by Android sleep.
 
 ### Suggested test sequence

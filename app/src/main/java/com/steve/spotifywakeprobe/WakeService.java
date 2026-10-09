@@ -409,8 +409,18 @@ public class WakeService extends Service {
                 }
                 return;
             }
-            if ("partial".equals(key) || !WakePhrase.matches(words)
-                    || System.currentTimeMillis() - lastWake < 5000) return;
+            if ("partial".equals(key)) return;
+            boolean matched = WakePhrase.matches(words);
+            String resultClass = matched ? "accepted" : words.trim().isEmpty() ? "empty" : "other";
+            String resultEvent = "WAKE_RESULT class=" + resultClass + " ms=" + wakeMicrophone.resultAudioMs();
+            Log.i(TAG, resultEvent);
+            DiagnosticHistory.record(this, resultEvent);
+            if (!matched) return;
+            if (System.currentTimeMillis() - lastWake < 5000) {
+                Log.i(TAG, "WAKE_IGNORED_DEBOUNCE");
+                DiagnosticHistory.record(this, "WAKE_IGNORED_DEBOUNCE");
+                return;
+            }
             lastWake = System.currentTimeMillis();
             listenFailures = 0;
             boolean locked = getSystemService(KeyguardManager.class).isKeyguardLocked();

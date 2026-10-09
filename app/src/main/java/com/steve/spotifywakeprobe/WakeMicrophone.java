@@ -24,6 +24,7 @@ final class WakeMicrophone implements AutoCloseable {
     private volatile boolean closed;
     private Thread worker;
     private Boolean lastSilenced;
+    private long resultAudioMs;
     private final AudioManager.AudioRecordingCallback recordingChanges = new AudioManager.AudioRecordingCallback() {
         @Override public void onRecordingConfigChanged(List<AudioRecordingConfiguration> configs) {
             if (closed) return;
@@ -68,13 +69,21 @@ final class WakeMicrophone implements AutoCloseable {
                     ready.run();
                 });
                 short[] buffer = new short[READ_SAMPLES];
+                long resultSamples = 0;
                 while (!closed) {
                     int count = recorder.read(buffer, 0, buffer.length, AudioRecord.READ_BLOCKING);
                     if (closed) break;
                     if (count < 0) throw new IOException("Wake microphone read failed");
+                    if (count > 0) resultSamples += count;
                     if (count > 0 && recognizer.acceptWaveForm(buffer, count)) {
                         String result = recognizer.getResult();
-                        main.post(() -> { if (!closed) listener.onResult(result); });
+                        long audioMs = resultSamples * 1000 / SAMPLE_RATE;
+                        resultSamples = 0;
+                        main.post(() -> {
+                            if (closed) return;
+                            resultAudioMs = audioMs;
+                            listener.onResult(result);
+                        });
                     }
                 }
             } catch (IOException | RuntimeException error) {
@@ -85,6 +94,9 @@ final class WakeMicrophone implements AutoCloseable {
         }, "WakeMicrophone");
         worker.start();
     }
+
+    // Captured audio since recording began or the preceding finalized result.
+    long resultAudioMs() { return resultAudioMs; }
 
     private void reportCapture(AudioRecordingConfiguration config) {
         if (closed || config == null) return;
