@@ -8,6 +8,31 @@
 - This repository starts from one cleaned public source baseline. Earlier private development history and personal test records are excluded.
 - Original project code is MIT licensed. The baseline uses a generic contributor identity rather than a personal email.
 
+## Next session: full review before the limited test release - 10 October 2026
+
+Steve requests a full review of all work currently done and a clear list of anything that needs fixing, changing or addressing before the final APK for a limited test release. Start with review and a written recommendation before further implementation or publication. This section takes precedence over older next-step instructions below.
+
+### Read and establish the current state
+
+1. Read this handoff, then README.md, INSTALL.md, TESTING_AND_DISTRIBUTION.md, RELEASE_SIGNING.md and THIRD_PARTY_NOTICES.md. Claude is actively updating README.md: preserve his work and review the completed version before the release decision; do not overwrite or treat the in-progress README as final.
+2. For the local review, read the ignored claude-audit/HANDOVER_TO_CODEX.md, TRACKER.md, LOG.md and AUDIT_2026-10-10.md. Use the latest tracker/log rather than repeating the original completed Do now list or answered questions. Never force-add private audit files.
+3. Verify the branch, working tree and remote before reviewing. Source main was `8c593ed` when this handoff was prepared, including the README/banner checkpoint. Re-resolve HEAD to include this handoff and any later Claude changes. Review the full current implementation and the changes since published alpha.1 (`1f0f9b7..HEAD`), rather than only the most recent fixes.
+4. Distinguish source, staged APK and published APK. Alpha.1 remains the public download. The unpublished alpha.2 review APK at .tools/releases/v0.2.1-alpha.2/Hey-Sally-0.2.1-alpha.2-arm64.apk embeds source `d803b5b35beba3286b7c80913a593ec5d933332e` and has SHA-256 `a3113817bb1a782b3ef1ac9396a68de2c935f3677ed9e27d52504825d05f0240`. It precedes subsequent documentation/banner changes and is a review artifact, not an approved final release. Earlier review bundles are preserved under review-1d12354 and review-79b0988.
+
+### Review scope and required result
+
+- Recheck each completed audit fix against current code and meaningful regressions, including number-title/playlist intent, natural controls, notification grants/denials, generic spoken failures, setup reason/HTTP status, connection timeouts/late callbacks and private wake aggregation. Do not accept a fixed label as proof.
+- Review the whole user flow: installation, own Spotify Client ID registration, both authorization paths, wake/beep/command/reply recovery, audible playback, song/artist/playlist/special requests, lifecycle and supported Android/Bluetooth conditions. Examine privacy/security, token/error handling, dependency/license provenance and any regression or misleading promise.
+- Triage every remaining finding and any new finding for a **limited test release**. Identify release blockers, advisable fixes before the test, limitations that may be accepted with clear instructions, and later work with reasons. Include R-07/W-02 offline-command claims, R-03 identity/branding, R-06 exact-APK validation, N-03 cold-start timeout and the other pending device findings. A proposed refactor is not automatically a release blocker.
+- Check that README/install/command/privacy/bug-report instructions match the implementation and exact downloadable artifact. Reconcile old handoff statements with the latest evidence. Verify the pinned SDK/model inputs, packaged notices, build/signing manifest, certificate continuity, alignment, checksums and source provenance. State whether checks used the existing cache or a fresh environment.
+- Run ./tests/check-playlists.ps1 and relevant focused checks. Existing local OAuth/controller harnesses are .tools/audit-token-check.py and .tools/audit-f05-check.py. Record what was actually run and what remains unverified. Device evidence must come from real observations; successful callbacks, mocks and lint do not prove audible or locked-screen operation.
+- Deliver a review report with severity, file/line evidence, reproduction or verification, proposed remedy, and an ordered pre-release action list. Give a go/no-go recommendation for the limited test release, listing unresolved blockers, accepted risks requiring Steve's decision, and the exact device/test evidence needed. Update the private tracker/log with verified statuses; do not silently close device findings.
+- After review and any authorized fixes, rebuild the final APK from the final committed source and verify its embedded commit and assets. Keep versionCode/release metadata consistent, publish accurate known limitations and tester installation/bug-report instructions, and seek Steve's release decision on the concrete verified bundle. Do not publish, tag or install the current review APK merely because it exists.
+
+### Preserve the agreed boundaries
+
+Keep the exact wake phrase Hey Sally, package com.steve.spotifywakeprobe, launcher label Spotify Wake Probe, public certificate and existing signing inputs. Steve explicitly requested continued use of the current signing location; backup details belong only in private audit notes. Relabeling and the Pixel migration test are separate tasks. Do not uninstall/overwrite the Pixel trial, move/copy keys, expose credentials/private diagnostics, change contributor identity, rewrite history or add paid services. Keep Claude's README work intact. If later fixes are authorized, use one commit per item, run ./tests/check-playlists.ps1 before every commit, stage only relevant files and push checkpoints without force.
+
 ## Current implementation
 
 The Android app is still named **Spotify Wake Probe**, its package is `com.steve.spotifywakeprobe`, and its wake phrase is **Hey Sally**. The activation grammar, exact matcher, setup instructions, notifications and retry replies now use the new phrase. The previous Hey Spotify phrase is rejected by the matcher. On 10 October the user confirmed Hey Sally activation and audible resume/next playback. One next-song attempt needed two wakes; screen/lock state was not separately confirmed. A signing-compatible local test APK has now updated the existing Pixel installation without resetting app data.
