@@ -175,9 +175,13 @@ Ordinary command failures carry only a fixed reason in `COMMAND_RESULT ERROR rea
 
 Diagnostics omit recognized words, so add your intended command separately if comfortable. A silent log cannot prove a missed wake; your observation is needed. Heartbeats are scheduled every 30 minutes but can be delayed by Android sleep.
 
+`SPOTIFY_CONNECT_RESULT CONNECTED|TIMEOUT|ERROR|IGNORED ms=... mode=PLAYBACK|AUTH` records elapsed time from the App Remote connection attempt until its callback is handled. An ignored late connection is disconnected. Playback keeps its 12-second timeout; manual authorization allows 120 seconds for consent. These timings do not prove audible playback.
+
 ### Suggested test sequence
 
 While stationary, record observations for: wake with music paused and playing; pause/resume/next/previous; a named song; playlist list/number selection; a missing destination and recovery; phone and Bluetooth output; locked screen; reboot followed by first unlock; and several hours/overnight screen-off use. Note unwanted beeps, missed phrases and battery levels/charging. Call/camera/recorder coexistence needs separate checks. Passing one command is not an overall reliability or battery result.
+
+For a separate cold-start trial on the updated build, while stationary: compare a known song request with Spotify already open against the same request after force-stopping Spotify in Android settings. Record the connection outcome/duration, any later ignored connection, and what you actually hear. Save diagnostics before changing installations. A device result is needed before choosing a different timeout.
 
 ## Contribute a pull request
 
