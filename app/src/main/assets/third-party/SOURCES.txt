@@ -17,5 +17,5 @@ LLVM-libcxx-LICENSE.txt https://raw.githubusercontent.com/llvm/llvm-project/llvm
 Formatting: trailing spaces and excess final blank lines normalized where needed; licence text unchanged.
 
 Project-GPL-3.0-LICENSE.txt https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt (standard GPLv3 text; byte-identical to repository LICENSE)
-Project-MIT-LICENSE.txt retained original project copyright/permission notice from the MIT-licensed alpha.1/alpha.2 era; does not license subsequent GPL-only changes.
+Project-MIT-LICENSE.txt project copyright/permission attribution; the project as a whole is distributed under GPL-3.0-only with the permission in Project-LINKING-EXCEPTION.txt.
 Project-LINKING-EXCEPTION.txt byte-identical to repository LINKING_EXCEPTION.md; GPLv3 section 7 permission approved by the maintainer on 10 October 2026.

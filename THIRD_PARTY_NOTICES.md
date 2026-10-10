@@ -2,9 +2,9 @@
 
 The current project source as a whole is licensed under GNU GPL version 3 only (`GPL-3.0-only`); see [LICENSE](LICENSE) and the [limited third-party linking permission](LINKING_EXCEPTION.md). Copyright (c) 2026 Spotify Wake Probe contributors. This does not replace third-party licences or Spotify's service terms.
 
-The alpha.1/alpha.2 releases were published under MIT and remain under those terms. `Project-MIT-LICENSE.txt` preserves the earlier copyright/permission notice; it does not offer subsequent GPL-only changes under MIT. `Project-GPL-3.0-LICENSE.txt` embeds the GPL text and `Project-LINKING-EXCEPTION.txt` embeds the approved additional permission. The previous alpha.1/alpha.2 release downloads and tags are retired in favour of alpha.3. Dependencies retain their existing notices and licences, including JNA's Apache 2.0 option.
+Project copyright and permission attribution is preserved in `Project-MIT-LICENSE.txt`. `Project-GPL-3.0-LICENSE.txt` embeds the project GPL text and `Project-LINKING-EXCEPTION.txt` embeds the approved additional permission. Dependencies retain their own licences and notices, including JNA's Apache 2.0 option.
 
-The alpha.3 release supplies Hey Sally project source and build scripts alongside the APK. Under the limited linking permission, the listed independent libraries may remain precompiled and separately licensed without including their implementation source in Hey Sally's Corresponding Source. Their own licensing obligations still apply. Input versions, hashes and notice provenance remain documented; this permission does not claim exact upstream native source revisions are known. Rebuild instructions are included in SOURCE_BUILD.md.
+The release supplies Hey Sally project source and build scripts alongside the APK. Under the limited linking permission, the listed independent libraries may remain precompiled and separately licensed without including their implementation source in Hey Sally's Corresponding Source. Their own licensing obligations still apply. Input versions, hashes and notice provenance remain documented; this permission does not claim exact upstream native source revisions are known. Rebuild instructions are included in SOURCE_BUILD.md.
 
 ## Files distributed in this source repository
 

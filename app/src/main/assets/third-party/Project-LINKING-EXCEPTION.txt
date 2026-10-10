@@ -17,4 +17,4 @@ The permission covers these independent components, as identified in THIRD_PARTY
 
 Upstream versions and modified replacements of these components qualify only while they remain independent of Hey Sally and are distributed under the respective component's applicable licence. This permission does not cover Hey Sally code copied into another library, or allow proprietary distribution of modifications to Hey Sally's own code. It grants no rights to third-party material beyond those provided by its copyright holders, and does not change Spotify's service terms or trademark rights.
 
-Recipients may remove this additional permission as allowed by GPL version 3 section 7. A contributor who wishes their changes to be distributed with these combinations must permit this exception for those changes. Existing copies previously obtained under MIT retain their original rights.
+Recipients may remove this additional permission as allowed by GPL version 3 section 7. A contributor who wishes their changes to be distributed with these combinations must permit this exception for those changes.

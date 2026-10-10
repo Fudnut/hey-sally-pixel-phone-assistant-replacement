@@ -1,6 +1,6 @@
 # Hey Sally: installation, commands, testing and GitHub distribution
 
-Updated 10 October 2026. App version: `0.2.1-alpha.3` (`versionCode 5`).
+Updated 10 October 2026. App version: `0.2.1-alpha.4` (`versionCode 6`).
 
 ## Overview
 
@@ -8,9 +8,9 @@ Say **Hey Sally**, wait for the ready beep, then speak one Spotify command. Use 
 
 The Android app is still called **Spotify Wake Probe** and uses package `com.steve.spotifywakeprobe`. Hey Sally is the current wake phrase; Hey Spotify is no longer accepted by the exact text matcher. This remains an experimental Spotify controller, not a general phone assistant or an official Spotify product.
 
-The source is public, Issues are enabled, and contributions can be proposed now. A maintainer-signed **0.2.1-alpha.3** limited-test prerelease APK is offered with [phone installation instructions](INSTALL.md). The existing locally installed personal trial remains a debug build with a different certificate; it was not replaced by the public APK.
+The source is public, Issues are enabled, and contributions can be proposed now. A maintainer-signed **0.2.1-alpha.4** limited-test prerelease APK is offered with [phone installation instructions](INSTALL.md).
 
-The user confirmed Hey Sally activation, audible resume and audible next-song playback on 10 October. One next-song test needed the wake phrase twice. Those short results do not establish long-duration reliability; the screen/lock state was not separately confirmed in that follow-up. Earlier feature tests used the previous wake phrase.
+The user confirmed Hey Sally activation, audible resume and audible next-song playback on 10 October. One next-song test needed the wake phrase twice. Those short results do not establish long-duration reliability; the screen/lock state was not separately confirmed in that follow-up. These observations do not validate the exact published APK.
 
 ## Contents
 
@@ -94,13 +94,13 @@ Complete these steps while stationary, with the phone unlocked.
 10. Check the status/notification for **Listening for Hey Sally**. Start Spotify playback manually once for the first basic-control test.
 11. Lock the phone and let the screen turn off. Say **Hey Sally**, wait for the beep, then say **pause**. Repeat with **resume**, then **next song**, confirming actual audible results.
 
-After reboot, unlock once so the offline model in credential-protected storage is accessible. Background startup has earlier device evidence; repeat the reboot test with the current Hey Sally build before relying on it.
+After reboot, unlock once so the offline model in credential-protected storage is accessible. Verify reboot/background startup on the published APK before relying on it.
 
 ## Every current command
 
 Every row includes the full sequence: say **Hey Sally**, **wait for the beep**, then speak the command. Use a fresh wake for every request. Alternate command forms use the same Hey Sally → beep sequence. Examples below are suggestions, not guaranteed search results. Names in angle brackets are replaced by your own request.
 
-The table describes alpha.3. The earlier alpha.1 APK uses exact control phrases, always treats bare numeric requests as playlist selection and lacks the new ordinary-failure speech and wake-result events. Use the version shown in your release and include it in reports.
+The table describes the current release. Include the installed app version in bug reports.
 
 | Action | Preferred voice sequence | Other command forms after Hey Sally and the beep | Behavior / limits |
 | --- | --- | --- | --- |
@@ -146,7 +146,7 @@ For Local Files, first make the tracks play normally inside Spotify on the phone
 - **Beep, then nothing audible:** the beep means the recognizer is ready; it is not a success signal. Wait for it before speaking. If Spotify is paused, try **resume** or a named playback request before **next song**.
 - **No wake beep:** wait until the prior reply/command ends, then try the exact **Hey Sally** phrase again. Check listener status, microphone permission, default-assistant selection and whether another app is using audio input. Record a missed first attempt rather than assuming the command failed.
 - **Wrong music:** use explicit **play song**, **play artist** or **play playlist** wording, with an artist qualifier where helpful.
-- **Quiet replies:** replies request the media route/volume. Check media volume and the chosen phone/Bluetooth/car output. One earlier car-route test succeeded; every route is not validated.
+- **Quiet replies:** replies request the media route/volume. Check media volume and the chosen phone/Bluetooth/car output. One car-route test succeeded; every route is not validated.
 - **Playlist number rejected:** list again; it may have expired or the number may not have been announced.
 - **Language support check fails:** some recognizers cannot answer the support query. This does not prove the language is unavailable; use an actual spoken test. The check does not download a model.
 - **Buttons overlap system bars:** a setup-screen inset issue remains. Scroll the desired control into the middle of the screen before tapping.
@@ -171,7 +171,7 @@ Include:
 
 Open the app, tap **Refresh status**, then **Copy diagnostic history**. Paste into a private note, review it, and attach only relevant redacted events to an issue. The app stores up to 1,024 events; busy use can overwrite earlier entries. Copy history each evening during a multi-day trial. **Start fresh diagnostic trial** clears it, so save any history you need first. Do not reset it merely because a command failed.
 
-In alpha.3, `WAKE_RESULT class=accepted ms=...` records exact wake-phrase matches individually. Other and empty results are counted in `WAKE_RESULTS_SUMMARY other=... empty=... ms=...`, normally once every five minutes (Android sleep can delay it), with a partial summary on service stop. Routine results do not carry individual timestamps or audio durations. Summary counts may reveal nearby speech/noise activity; accepted wakes and debounce rejections retain individual timestamps. Starting a fresh diagnostic trial also clears pending counts. Accepted means an exact wake-phrase match; `WAKE_IGNORED_DEBOUNCE` then identifies one rejected by the existing five-second gate. Summary milliseconds describe the elapsed counting window. Accepted-result milliseconds measure captured audio since recording started or the preceding finalized result, including silence; they are not latency from when you spoke the wake phrase. No recognized words or audio are stored.
+In alpha.4, `WAKE_RESULT class=accepted ms=...` records exact wake-phrase matches individually. Other and empty results are counted in `WAKE_RESULTS_SUMMARY other=... empty=... ms=...`, normally once every five minutes (Android sleep can delay it), with a partial summary on service stop. Routine results do not carry individual timestamps or audio durations. Summary counts may reveal nearby speech/noise activity; accepted wakes and debounce rejections retain individual timestamps. Starting a fresh diagnostic trial also clears pending counts. Accepted means an exact wake-phrase match; `WAKE_IGNORED_DEBOUNCE` then identifies one rejected by the existing five-second gate. Summary milliseconds describe the elapsed counting window. Accepted-result milliseconds measure captured audio since recording started or the preceding finalized result, including silence; they are not latency from when you spoke the wake phrase. No recognized words or audio are stored.
 
 Ordinary command failures carry only a fixed reason in `COMMAND_RESULT ERROR reason=AUTH|TIMEOUT|NETWORK|NO_MATCH|REMOTE`. These categories help distinguish authorization, timeouts, connectivity, missing matches and other remote failures; exception text, URLs and recognized words are omitted. The spoken failure remains generic. Setup-screen local authorization failures show DECLINED, STATE_MISMATCH or CALLBACK; other failures show the fixed reason; a failed token exchange also shows its HTTP status, such as `AUTH (HTTP 400)`. Include this safe detail in setup bug reports. Provider response bodies, exception messages, tokens and URLs are not displayed.
 
@@ -195,19 +195,19 @@ For a separate cold-start trial on the updated build, while stationary: compare 
 6. Commit and push to your fork, then open a PR against `main`. Explain the problem, resulting behavior, related issue and validation.
 7. Keep credentials, keystores, model/SDK downloads, APKs, diagnostics, caches and personal listening records out of commits. Do not change public/private app identity or signing to bypass an installation problem.
 
-No contributor receives direct write access merely by submitting a PR. Maintainers review and merge contributions. The current project source is GPL version 3 only (`GPL-3.0-only`) with the [limited linking permission](LINKING_EXCEPTION.md); contributions intended for the distributed app must be compatible with both. Earlier alpha.1/alpha.2 releases retain their MIT terms. Dependencies keep their own terms. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+No contributor receives direct write access merely by submitting a PR. Maintainers review and merge contributions. The current project source is GPL version 3 only (`GPL-3.0-only`) with the [limited linking permission](LINKING_EXCEPTION.md); contributions intended for the distributed app must be compatible with both. Dependencies keep their own terms. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## GitHub prerelease status
 
-The limited-test APK is **0.2.1-alpha.3**, signed with a dedicated public-release certificate. [INSTALL.md](INSTALL.md) is the phone-first download/setup guide; [RELEASE_SIGNING.md](RELEASE_SIGNING.md) identifies the public certificate and update policy.
+The limited-test APK is **0.2.1-alpha.4**, signed with a dedicated public-release certificate. [INSTALL.md](INSTALL.md) is the phone-first download/setup guide; [RELEASE_SIGNING.md](RELEASE_SIGNING.md) identifies the public certificate and update policy.
 
 | Item | State for this alpha |
 | --- | --- |
 | Public source and collaboration | Public repository, Issues enabled, bug-report and PR templates supplied. Forks and PRs are welcome. |
-| APK | Non-debuggable ARM64 release build, Android 14+, versionCode 5; signature and alignment verified. |
+| APK | Non-debuggable ARM64 release build, Android 14+, versionCode 6; signature and alignment verified. |
 | Signing | Dedicated release key kept locally outside Git; public certificate fingerprint supplied for Spotify setup. Maintainer must retain a recoverable key/credential backup for future updates. |
 | Dependency notices | Full fetched licence/notice texts embedded in assets and supplied in a notices ZIP. Runtime/native inventory and provenance documented in THIRD_PARTY_NOTICES.md. |
-| Downloads | Versioned APK, checksums, notices, GPL text/linking permission, project source and install guide are prerelease assets. Alpha.1/alpha.2 release downloads and tags are retired. Source-code ZIPs are not installable APKs. |
+| Downloads | Versioned APK, checksums, notices, GPL text/linking permission, project source and install guide are prerelease assets. Source-code ZIPs are not installable APKs. |
 | Spotify access | Each tester configures their own Developer Client ID or an explicitly arranged allowlisted tester app. No shared registration is embedded. |
 | Checks | Java command/wake/language/playlist checks and release build including full Android release lint pass (ten non-fatal warnings remain). Signature, package/version/ABI, non-debuggable manifest and notice assets verified. |
 | Device limits | Public certificate APK not installed over the differently signed private trial. Fresh release installation/registration and exact-artifact audio tests remain unverified. Debug-build Hey Sally/resume/next have short user confirmation; one repeated wake was reported. |
