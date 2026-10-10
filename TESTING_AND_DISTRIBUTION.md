@@ -195,7 +195,7 @@ For a separate cold-start trial on the updated build, while stationary: compare 
 6. Commit and push to your fork, then open a PR against `main`. Explain the problem, resulting behavior, related issue and validation.
 7. Keep credentials, keystores, model/SDK downloads, APKs, diagnostics, caches and personal listening records out of commits. Do not change public/private app identity or signing to bypass an installation problem.
 
-No contributor receives direct write access merely by submitting a PR. Maintainers review and merge contributions. The project's original code is MIT licensed; dependencies keep their own terms. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+No contributor receives direct write access merely by submitting a PR. Maintainers review and merge contributions. The current project source is GPL version 3 only (`GPL-3.0-only`); contributions must be compatible with that licence. Earlier alpha.1/alpha.2 releases retain their MIT terms. Dependencies keep their own terms. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## GitHub prerelease status
 
@@ -215,7 +215,7 @@ The limited-test APK is **0.2.1-alpha.2**, signed with a dedicated public-releas
 
 A precompiled APK removes the need for testers to compile Android code, but Spotify registration/authorization remains necessary. A development Client ID cannot offer unrestricted access to the public. Broader shared access needs a separate plan under [Spotify's current rules](https://developer.spotify.com/documentation/web-api/concepts/quota-modes).
 
-Future releases must keep the chosen public certificate/package and increase versionCode. Do not generate a new key for every release or publish signing material. Review exact assets, tag their source commit and attach them to a GitHub prerelease. CI can follow after the manual release path is proven.
+Future releases must keep the chosen public certificate/package and increase versionCode. A future GPL-covered APK also requires complete Corresponding Source, including applicable dependency source/build scripts; resolve the precompiled Spotify/native source-provenance gaps described in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before publishing it. Do not generate a new key for every release or publish signing material. Review exact assets, tag their source commit and attach them to a GitHub prerelease. CI can follow after the manual release path is proven.
 ## Privacy and limits
 
 Wake audio is processed locally with Vosk and is not saved by app-owned code. Command audio may be sent to Android's speech provider; playlist names go to the configured TTS engine, whose voice may use network processing. Named searches/authorization go to Spotify. There is no Gemini connection or project-operated backend. Tokens are encrypted using Android Keystore; backup and device transfer are disabled.

@@ -6,7 +6,7 @@
 - Branch: `main`.
 - Read `README.md` for build/setup, commands, privacy and limitations, and `THIRD_PARTY_NOTICES.md` for dependency terms.
 - This repository starts from one cleaned public source baseline. Earlier private development history and personal test records are excluded.
-- Original project code is MIT licensed. The baseline uses a generic contributor identity rather than a personal email.
+- Current project source is GPL version 3 only (`GPL-3.0-only`) from the 10 October 2026 licensing checkpoint. Earlier alpha.1/alpha.2 releases retain their MIT terms. The baseline uses a generic contributor identity rather than a personal email.
 
 ## Next session: full review before the limited test release - 10 October 2026
 
@@ -146,3 +146,10 @@ The final limited-test bundle must be built from committed source with embedded 
 ## Final alpha.2 limited-test release preparation
 
 The current download/install/command documentation targets 0.2.1-alpha.2 (versionCode 4); alpha.1 remains an earlier release. The five intended release assets are the signed ARM64 APK, third-party notices ZIP, INSTALL.md, RELEASE_SIGNING.md and SHA256SUMS.txt. The tag must identify this committed source, and the APK's embedded version-control metadata must match it. Release notes must disclose that the exact public APK has not received a fresh installation/registration or audible locked-screen test. All existing device findings stay open for the limited test; the differently signed Pixel trial is untouched. No signing key or credential belongs in an asset.
+
+
+## GPL licensing checkpoint - 10 October 2026
+
+Steve requested changing the project licence to GPL after discussing GPLv3. Current source is GPL-3.0-only; LICENSE and the embedded Project-GPL-3.0-LICENSE.txt contain the standard SPDX GPLv3 text. The earlier Project-MIT-LICENSE.txt is retained as historical copyright/permission attribution, and third-party terms are unchanged. README, contribution guidance, install notes and third-party provenance identify the transition. Earlier alpha.1/alpha.2 tags/APKs retain MIT; no published asset, release/tag or application identity/signing/Pixel installation was changed for this checkpoint.
+
+Before the next GPL-covered binary release, satisfy the complete Corresponding Source requirement for the actual combined program, including required dependency source/build scripts. The precompiled Spotify SDK and exact native-library provenance are not resolved merely by publishing licence texts or the project repository. Treat this as a release preparation gate; do not claim the existing MIT APK has become GPL or reuse the old notices-count checks without accounting for the added GPL asset.

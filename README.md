@@ -147,4 +147,4 @@ The focused Java checks cover command parsing, regional settings, playlist pagin
 
 ## Licence
 
-Original project code is licensed under [MIT](LICENSE). Third-party components retain their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Downloaded SDK/model files, credentials, diagnostic exports and debug APKs are excluded from Git.
+Copyright (c) 2026 Spotify Wake Probe contributors. The current project source is licensed under [GNU GPL version 3 only](LICENSE) (`GPL-3.0-only`). This licence change applies from the 10 October 2026 licensing checkpoint; previously published alpha.1/alpha.2 source and APKs retain their original MIT terms. Earlier MIT permissions are not revoked. Third-party components retain their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Downloaded SDK/model files, credentials, diagnostic exports and debug APKs are excluded from Git.

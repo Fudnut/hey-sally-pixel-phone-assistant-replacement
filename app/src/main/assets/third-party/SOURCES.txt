@@ -15,3 +15,6 @@ JetBrains-annotations-LICENSE.txt https://raw.githubusercontent.com/JetBrains/ja
 ErrorProne-LICENSE.txt https://raw.githubusercontent.com/google/error-prone/v2.41.0/COPYING
 LLVM-libcxx-LICENSE.txt https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-17.0.6/libcxx/LICENSE.TXT
 Formatting: trailing spaces and excess final blank lines normalized where needed; licence text unchanged.
+
+Project-GPL-3.0-LICENSE.txt https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt (standard GPLv3 text; byte-identical to repository LICENSE)
+Project-MIT-LICENSE.txt retained original project copyright/permission notice from the MIT-licensed alpha.1/alpha.2 era; does not license subsequent GPL-only changes.

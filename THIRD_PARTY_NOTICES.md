@@ -1,6 +1,10 @@
 # Third-party components
 
-The MIT licence at the repository root covers this project's original code. It does not replace third-party licences or Spotify's service terms.
+The current project source as a whole is licensed under GNU GPL version 3 only (`GPL-3.0-only`); see [LICENSE](LICENSE). Copyright (c) 2026 Spotify Wake Probe contributors. This does not replace third-party licences or Spotify's service terms.
+
+The alpha.1/alpha.2 releases were published under MIT and remain under those terms. `Project-MIT-LICENSE.txt` preserves the earlier copyright/permission notice; it does not offer subsequent GPL-only changes under MIT. `Project-GPL-3.0-LICENSE.txt` embeds the current GPL text for future builds. Dependencies retain their existing notices and licences, including JNA's Apache 2.0 option.
+
+Before distributing a new GPL-covered APK, provide its complete Corresponding Source under GPLv3 section 6, including required build scripts and dependency source. A repository link and licence texts alone do not establish this for precompiled libraries: the exact Spotify/native dependency source and build provenance must be resolved before a new GPL APK release. Current published MIT assets are not replaced by this source-licensing checkpoint.
 
 ## Files distributed in this source repository
 

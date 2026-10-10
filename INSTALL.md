@@ -90,6 +90,8 @@ Tap **Stop probe** to stop microphone listening. Select your previous digital as
 
 ## Privacy and prerelease status
 
+The published alpha.2 APK and its source tag retain their original MIT licence. The current main-branch source has since changed to GPL version 3 only; that change does not alter this already-published download.
+
 Wake recognition runs locally with Vosk. App-owned code does not save audio/transcripts. Commands may use the configured Android speech provider online, spoken playlist names go to the TTS engine, and music searches/authorization go to Spotify. Tokens are encrypted using Android Keystore. There is no Gemini integration or hosted AI backend.
 
 This prerelease is non-debuggable and includes third-party notices in `assets/third-party/` plus a separate notices ZIP. It is not a Play Store release or a reliability guarantee. Exact release-build device installation, fresh Spotify registration and longer battery/audio/coexistence tests remain unverified; prior short functional tests used the debug build from the same application code. Read the release notes before testing.
