@@ -15,7 +15,8 @@ import android.media.AudioRecordingConfiguration;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.Looper;
-import org.vosk.Recognizer;
+import org.json.JSONObject;
+import org.vosk.Model;
 import org.vosk.android.RecognitionListener;
 import java.io.IOException;
 import java.util.List;
@@ -25,7 +26,7 @@ final class WakeMicrophone implements AutoCloseable {
     private static final int SAMPLE_RATE = 16000;
     private static final int READ_SAMPLES = 3200;
     private final Context context;
-    private final Recognizer recognizer;
+    private final WakeDetector detector;
     private final AudioRecord recorder;
     private final Handler main = new Handler(Looper.getMainLooper());
     private volatile boolean closed;
@@ -40,9 +41,8 @@ final class WakeMicrophone implements AutoCloseable {
         }
     };
 
-    WakeMicrophone(Context context, Recognizer recognizer) throws IOException {
+    WakeMicrophone(Context context, Model model) throws IOException {
         this.context = context.getApplicationContext();
-        this.recognizer = recognizer;
         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
             throw new SecurityException("Microphone permission required");
         int minimum = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
@@ -53,13 +53,16 @@ final class WakeMicrophone implements AutoCloseable {
                 .setPrivacySensitive(true)
                 .setAudioFormat(new AudioFormat.Builder().setSampleRate(SAMPLE_RATE)
                         .setChannelMask(AudioFormat.CHANNEL_IN_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
-                .setBufferSizeInBytes(Math.max(minimum, READ_SAMPLES * 2)).build();
+                // Queue capture while a bounded candidate is verified on this worker.
+                .setBufferSizeInBytes(Math.max(minimum, WakeDetector.MAX_SAMPLES * 2)).build();
         try {
             if (recorder.getState() != AudioRecord.STATE_INITIALIZED)
                 throw new IOException("Wake microphone initialization failed");
             recorder.registerAudioRecordingCallback(context.getMainExecutor(), recordingChanges);
+            detector = VoskWakeDecoder.create(model);
         } catch (IOException | RuntimeException error) {
-            recorder.release();
+            try { recorder.unregisterAudioRecordingCallback(recordingChanges); }
+            finally { recorder.release(); }
             throw error;
         }
     }
@@ -84,8 +87,9 @@ final class WakeMicrophone implements AutoCloseable {
                     if (closed) break;
                     if (count < 0) throw new IOException("Wake microphone read failed");
                     if (count > 0) resultSamples += count;
-                    if (count > 0 && recognizer.acceptWaveForm(buffer, count)) {
-                        String result = recognizer.getResult();
+                    String words = count > 0 ? detector.accept(buffer, count) : null;
+                    if (words != null) {
+                        String result = new JSONObject().put("text", words).toString();
                         long audioMs = resultSamples * 1000 / SAMPLE_RATE;
                         resultSamples = 0;
                         main.post(() -> {
@@ -95,7 +99,7 @@ final class WakeMicrophone implements AutoCloseable {
                         });
                     }
                 }
-            } catch (IOException | RuntimeException error) {
+            } catch (Exception error) {
                 main.post(() -> { if (!closed) listener.onError(error); });
             } finally {
                 try { recorder.stop(); } catch (IllegalStateException ignored) { }
@@ -120,13 +124,16 @@ final class WakeMicrophone implements AutoCloseable {
         if (closed) return;
         closed = true;
         recorder.unregisterAudioRecordingCallback(recordingChanges);
-        // Stop unblocks a pending read; join before WakeService closes the Vosk recognizer.
+        // Stop unblocks reads; join before closing decoders or their shared model.
         try { recorder.stop(); } catch (IllegalStateException ignored) { }
         boolean interrupted = false;
         if (worker != null) while (worker.isAlive()) {
             try { worker.join(); } catch (InterruptedException ignored) { interrupted = true; }
         }
-        recorder.release();
-        if (interrupted) Thread.currentThread().interrupt();
+        try { detector.close(); }
+        finally {
+            recorder.release();
+            if (interrupted) Thread.currentThread().interrupt();
+        }
     }
 }

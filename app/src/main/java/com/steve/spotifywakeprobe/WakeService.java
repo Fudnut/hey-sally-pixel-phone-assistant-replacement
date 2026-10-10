@@ -232,9 +232,6 @@ public class WakeService extends Service {
             startDeviceCommand(current);
             return;
         }
-        // A wake-only grammar can force unrelated speech into "hey sally" with
-        // high confidence. Let ordinary words compete before the exact final gate.
-        recognizer = new Recognizer(model, 16000f);
         RecognitionListener listener = new RecognitionListener() {
             @Override public void onPartialResult(String hypothesis) { heard(current, hypothesis, "partial", false); }
             @Override public void onResult(String hypothesis) { heard(current, hypothesis, "text", false); }
@@ -254,7 +251,7 @@ public class WakeService extends Service {
             }
         };
         if (!forCommand) {
-            wakeMicrophone = new WakeMicrophone(this, recognizer);
+            wakeMicrophone = new WakeMicrophone(this, model);
             wakeMicrophone.start(listener, () -> {
                 if (current != generation || destroyed) return;
                 listenReadyAt = SystemClock.elapsedRealtime();
@@ -264,6 +261,7 @@ public class WakeService extends Service {
             });
             return;
         }
+        recognizer = new Recognizer(model, 16000f);
         speech = new SpeechService(recognizer, 16000f);
         speech.startListening(listener, 20000);
         commandReadyBeep();
