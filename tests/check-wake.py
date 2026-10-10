@@ -25,7 +25,8 @@ classpath = os.pathsep.join(map(str, paths))
 source = root / 'app/src/main/java/com/steve/spotifywakeprobe'
 with tempfile.TemporaryDirectory(prefix='hey-sally-wake-') as directory:
     build = Path(directory)
-    sources = [source / name for name in ['WakePhrase.java', 'WakeDetector.java', 'VoskWakeDecoder.java']]
+    sources = [source / name for name in
+               ['WakePhrase.java', 'WakeGrammar.java', 'WakeDetector.java', 'VoskWakeDecoder.java']]
     sources.append(root / 'tests/WakeAcousticCheck.java')
     subprocess.run(['javac', '-cp', classpath, '-d', str(build), *map(str, sources)], check=True)
     library = args.library.resolve()

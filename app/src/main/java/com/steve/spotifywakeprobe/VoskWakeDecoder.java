@@ -11,23 +11,20 @@ import org.vosk.Model;
 import org.vosk.Recognizer;
 import java.io.IOException;
 
-/** Both decoders share the existing model; the full decoder is created lazily. */
+/** One closed-vocabulary decoder for wake detection. */
 final class VoskWakeDecoder implements WakeDetector.Decoder {
     private final Recognizer recognizer;
     private VoskWakeDecoder(Recognizer recognizer) { this.recognizer = recognizer; }
 
     static WakeDetector create(Model model) throws IOException {
         return new WakeDetector(new VoskWakeDecoder(new Recognizer(model, 16000f,
-                "[\"hey sally\", \"[unk]\"]")),
-                () -> new VoskWakeDecoder(new Recognizer(model, 16000f)));
+                WakeGrammar.json())));
     }
 
     @Override public String accept(short[] samples, int count) throws IOException {
         // FinalResult also flushes feature state: each buffer is an independent segment.
         return recognizer.acceptWaveForm(samples, count) ? text(recognizer.getFinalResult()) : null;
     }
-    @Override public String finish() throws IOException { return text(recognizer.getFinalResult()); }
-    @Override public void reset() { recognizer.reset(); }
     @Override public void close() { recognizer.close(); }
 
     private static String text(String json) throws IOException {

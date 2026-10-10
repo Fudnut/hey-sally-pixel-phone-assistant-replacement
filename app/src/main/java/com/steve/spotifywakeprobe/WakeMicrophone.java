@@ -57,8 +57,7 @@ final class WakeMicrophone implements AutoCloseable {
                 .setPrivacySensitive(true)
                 .setAudioFormat(new AudioFormat.Builder().setSampleRate(SAMPLE_RATE)
                         .setChannelMask(AudioFormat.CHANNEL_IN_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
-                // Queue capture while a bounded candidate is verified on this worker.
-                .setBufferSizeInBytes(Math.max(minimum, WakeDetector.MAX_SAMPLES * 2)).build();
+                .setBufferSizeInBytes(Math.max(minimum, READ_SAMPLES * 2)).build();
         try {
             if (recorder.getState() != AudioRecord.STATE_INITIALIZED)
                 throw new IOException("Wake microphone initialization failed");
@@ -106,9 +105,7 @@ final class WakeMicrophone implements AutoCloseable {
                             String probe = "WAKE_INPUT_LEVEL samples=" + levelSamples
                                     + " rms=" + Math.round(Math.sqrt(levelSquares / (double) levelSamples))
                                     + " peak=" + levelPeak + " zeros=" + levelZeros
-                                    + " finals=" + detector.candidateFinals + " candidateFlags=" + detector.candidateTokens
-                                    + " verifications=" + detector.verifications + " confirmations=" + detector.confirmations
-                                    + " verifierFlags=" + detector.verifierTokens + " verifierWords=" + detector.lastVerifierWords;
+                                    + " finals=" + detector.candidateFinals + " candidateFlags=" + detector.candidateFlags;
                             main.post(() -> { if (!closed) DiagnosticHistory.record(context, probe); });
                             levelReports++; levelSamples = 0; levelSquares = 0; levelPeak = 0; levelZeros = 0;
                         }
