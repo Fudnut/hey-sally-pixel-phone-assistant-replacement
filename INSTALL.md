@@ -1,12 +1,13 @@
-# Install and test Hey Sally 0.2.1-alpha.2
+# Install and test Hey Sally 0.2.1-alpha.3
 
 This is an experimental, precompiled Android APK. You do not need Android Studio, a compiler or a USB cable to install it. The app appears on your phone as **Spotify Wake Probe**; its wake phrase is **Hey Sally**.
 
 ## Download
 
-- [Download the ARM64 APK](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.2/Hey-Sally-0.2.1-alpha.2-arm64.apk)
-- [Release notes and all assets](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/tag/v0.2.1-alpha.2)
-- [APK/asset checksums](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.2/SHA256SUMS.txt)
+- [Download the ARM64 APK](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.3/Hey-Sally-0.2.1-alpha.3-arm64.apk)
+- [Release notes and all assets](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/tag/v0.2.1-alpha.3)
+- [Project source and build instructions](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.3/Hey-Sally-0.2.1-alpha.3-source.zip)
+- [APK/asset checksums](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.3/SHA256SUMS.txt)
 
 Choose the `.apk` asset, not GitHub's source-code ZIP. Requires an **ARM64 phone on Android 14 or later**, Spotify installed, and Spotify Developer access. Device testing so far is limited to a Pixel 8 Pro on Android 17; other phones, battery use and long-term reliability are not established.
 
@@ -21,7 +22,7 @@ Choose the `.apk` asset, not GitHub's source-code ZIP. Requires an **ARM64 phone
 Optional checksum check on a computer:
 
 ```powershell
-Get-FileHash ./Hey-Sally-0.2.1-alpha.2-arm64.apk -Algorithm SHA256
+Get-FileHash ./Hey-Sally-0.2.1-alpha.3-arm64.apk -Algorithm SHA256
 ```
 
 Compare with `SHA256SUMS.txt` from the same release. The APK is signed with a dedicated public-release certificate. Future releases should use that same certificate.
@@ -48,7 +49,7 @@ Do this while stationary and unlocked.
 4. Choose your **Command language** (US/Australian/UK/New Zealand English, or the phone's English language). It applies on the next wake and does not change the local US-English wake model.
 5. Check that status/notification says **Listening for Hey Sally**.
 
-Alpha.2 requests microphone and notification permissions together when needed. Denying notifications does not prevent startup if microphone permission is granted; status warns when notifications are disabled. Denying the microphone prevents capture. This revised first-run/denial flow still needs testing on the exact release APK.
+Alpha.3 requests microphone and notification permissions together when needed. Denying notifications does not prevent startup if microphone permission is granted; status warns when notifications are disabled. Denying the microphone prevents capture. This revised first-run/denial flow still needs testing on the exact release APK.
 
 The microphone indicator stays visible because hands-free wake uses continuous local microphone processing. Stop the listener when another recording app needs the microphone. After reboot, unlock once before testing. If setup controls overlap system bars, scroll the button into the middle of the screen.
 
@@ -78,7 +79,7 @@ See [all commands, alternate forms and limitations](TESTING_AND_DISTRIBUTION.md#
 
 Test while stationary. Confirm actual audible results, first with the screen on and then locked/screen off. Note whether music was playing, your audio route, repeated wake attempts, unwanted beeps and spoken failures. One repeated Hey Sally wake has already been reported; no overall success rate is established.
 
-Open [GitHub Issues](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/issues). Include version **0.2.1-alpha.2**, phone/Android/Spotify versions, command language, lock/screen state, phone/Bluetooth output, steps, expected/actual result and approximate time with timezone.
+Open [GitHub Issues](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/issues). Include version **0.2.1-alpha.3**, phone/Android/Spotify versions, command language, lock/screen state, phone/Bluetooth output, steps, expected/actual result and approximate time with timezone.
 
 In the app, tap **Refresh status** then **Copy diagnostic history**. Paste into a private note and review before sharing only relevant events. Do not post passwords, tokens, account emails or full ADB logs. The log holds the newest 1,024 events; **Start fresh diagnostic trial** clears prior history. Save it first if needed.
 
@@ -90,7 +91,7 @@ Tap **Stop probe** to stop microphone listening. Select your previous digital as
 
 ## Privacy and prerelease status
 
-The published alpha.2 APK and its source tag retain their original MIT licence. The current main-branch source has since changed to GPL version 3 only; that change does not alter this already-published download.
+This alpha.3 release uses GPL version 3 only with a limited permission for its independently licensed libraries; see [LICENSE](LICENSE) and [LINKING_EXCEPTION.md](LINKING_EXCEPTION.md). The release includes the project source and build scripts. Earlier alpha.1/alpha.2 downloads are retired; copies already obtained retain their original MIT rights.
 
 Wake recognition runs locally with Vosk. App-owned code does not save audio/transcripts. Commands may use the configured Android speech provider online, spoken playlist names go to the TTS engine, and music searches/authorization go to Spotify. Tokens are encrypted using Android Keystore. There is no Gemini integration or hosted AI backend.
 

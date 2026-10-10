@@ -16,7 +16,7 @@ For complete installation steps, all command forms, bug reports, pull requests a
 
 ## Download the test APK
 
-[Download Hey Sally 0.2.1-alpha.2 for ARM64 Android](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.2/Hey-Sally-0.2.1-alpha.2-arm64.apk). Read [INSTALL.md](INSTALL.md) for phone installation, your own Spotify Developer setup, commands and bug reports. This is an experimental prerelease for Android 14+, not a Play Store release. No compilation is needed; Spotify registration/authorization is still required.
+[Download Hey Sally 0.2.1-alpha.3 for ARM64 Android](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.3/Hey-Sally-0.2.1-alpha.3-arm64.apk). Read [INSTALL.md](INSTALL.md) for phone installation, your own Spotify Developer setup, commands and bug reports. This is an experimental prerelease for Android 14+, not a Play Store release. No compilation is needed; Spotify registration/authorization is still required.
 
 The public APK has a separate signing identity from private trial/self-built APKs; do not uninstall an existing trial to resolve a signature conflict without saving its diagnostics and choosing a migration. See [RELEASE_SIGNING.md](RELEASE_SIGNING.md).
 
@@ -60,7 +60,7 @@ A public repository does not remove Spotify's API access restrictions. Developme
 
 ## Commands
 
-The alpha.2 limited-test APK includes expanded control phrasing, numeric songs outside playlist browsing, spoken ordinary failures and additional wake diagnostics. It also cancels superseded ordinary requests and bounds their completion. Exact-release device tests remain outstanding.
+The alpha.3 limited-test APK includes expanded control phrasing, numeric songs outside playlist browsing, spoken ordinary failures and additional wake diagnostics. It also cancels superseded ordinary requests and bounds their completion. Exact-release device tests remain outstanding.
 
 | Say after the beep | Behavior |
 | --- | --- |
@@ -147,4 +147,4 @@ The focused Java checks cover command parsing, regional settings, playlist pagin
 
 ## Licence
 
-Copyright (c) 2026 Spotify Wake Probe contributors. The current project source is licensed under [GNU GPL version 3 only](LICENSE) (`GPL-3.0-only`). This licence change applies from the 10 October 2026 licensing checkpoint; previously published alpha.1/alpha.2 source and APKs retain their original MIT terms. Earlier MIT permissions are not revoked. Third-party components retain their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Downloaded SDK/model files, credentials, diagnostic exports and debug APKs are excluded from Git.
+Copyright (c) 2026 Spotify Wake Probe contributors. The current project source is licensed under [GNU GPL version 3 only](LICENSE) (`GPL-3.0-only`) with the [limited third-party linking permission](LINKING_EXCEPTION.md). This licence change applies from the 10 October 2026 licensing checkpoint; Previously published alpha.1/alpha.2 copies retain their original MIT terms; their release downloads are retired in favour of alpha.3. Earlier MIT permissions are not revoked. Third-party components retain their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Downloaded SDK/model files, credentials, diagnostic exports and debug APKs are excluded from Git.

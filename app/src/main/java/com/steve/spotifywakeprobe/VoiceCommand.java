@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2026 Spotify Wake Probe contributors.
+ * SPDX-License-Identifier: GPL-3.0-only
+ * Additional permission under GPLv3 section 7: see LINKING_EXCEPTION.md.
+ */
 package com.steve.spotifywakeprobe;
 
 import java.util.Locale;

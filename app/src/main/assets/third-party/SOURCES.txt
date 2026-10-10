@@ -18,3 +18,4 @@ Formatting: trailing spaces and excess final blank lines normalized where needed
 
 Project-GPL-3.0-LICENSE.txt https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt (standard GPLv3 text; byte-identical to repository LICENSE)
 Project-MIT-LICENSE.txt retained original project copyright/permission notice from the MIT-licensed alpha.1/alpha.2 era; does not license subsequent GPL-only changes.
+Project-LINKING-EXCEPTION.txt byte-identical to repository LINKING_EXCEPTION.md; GPLv3 section 7 permission approved by the maintainer on 10 October 2026.
