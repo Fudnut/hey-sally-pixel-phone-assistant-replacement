@@ -27,6 +27,8 @@ final class WakeDetector implements AutoCloseable {
     private boolean overflow;
     private boolean pendingHey;
     private boolean closed;
+    // Fixed keyword flags/counts for bounded private debug probes; never transcripts.
+    int candidateFinals, candidateTokens, verifications, confirmations, verifierTokens, lastVerifierWords;
 
     WakeDetector(Decoder candidate, Factory factory) {
         this.candidate = candidate;
@@ -42,11 +44,10 @@ final class WakeDetector implements AutoCloseable {
         if (copied != count) overflow = true;
         String text = candidate.accept(samples, count);
         if (text == null) return null;
-        boolean hey = false, sally = false;
-        for (String word : text.trim().split("\\s+")) {
-            if (word.equalsIgnoreCase("hey")) hey = true;
-            if (word.equalsIgnoreCase("sally")) sally = true;
-        }
+        candidateFinals++;
+        int tokens = keywordTokens(text);
+        candidateTokens |= tokens;
+        boolean hey = (tokens & 1) != 0, sally = (tokens & 2) != 0;
         // A silence endpoint can cut between the two words. Hold at most one result.
         if (hey && !sally && !pendingHey && !overflow) {
             pendingHey = true;
@@ -58,11 +59,26 @@ final class WakeDetector implements AutoCloseable {
             if (overflow || length == 0) return "[unk]";
             if (verifier == null) verifier = factory.create();
             try {
+                verifications++;
                 String verified = verifier.accept(audio, length);
                 if (verified == null) verified = verifier.finish();
-                return WakePhrase.matches(verified) ? "hey sally" : "[unk]";
+                verifierTokens |= keywordTokens(verified);
+                lastVerifierWords = verified.trim().isEmpty() ? 0 : verified.trim().split("\\s+").length;
+                boolean matches = WakePhrase.matches(verified);
+                if (matches) confirmations++;
+                return matches ? "hey sally" : "[unk]";
             } finally { verifier.reset(); }
         } finally { clearAudio(text.isEmpty() && !pendingHey); }
+    }
+
+    private static int keywordTokens(String text) {
+        int flags = 0;
+        for (String word : text.trim().split("\\s+")) {
+            if (word.equalsIgnoreCase("hey")) flags |= 1;
+            if (word.equalsIgnoreCase("sally")) flags |= 2;
+            if (word.equalsIgnoreCase("hay")) flags |= 4;
+        }
+        return flags;
     }
 
     private void clearAudio(boolean keepQuietTail) {

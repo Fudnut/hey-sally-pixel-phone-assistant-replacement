@@ -102,6 +102,7 @@ Wake capture requests Android's privacy-sensitive microphone mode to reduce inte
 - Spoken playlist names go to the configured text-to-speech engine, whose voice may use network processing.
 - Named music queries and Spotify authorization requests go to Spotify. No Gemini integration or project-operated backend is used.
 - OAuth tokens are stored encrypted using Android Keystore. Android backup and device transfer are disabled for app data.
+- Private debug builds can report up to three 30-second microphone-level and wake-stage summaries after capture starts, plus input type/sample-rate metadata. These contain aggregate levels and fixed keyword flags/counts; no audio or transcripts. Release builds do not emit these probes.
 - Up to 1,024 diagnostic events remain in app-private storage. They contain timestamps, command categories, counts and outcomes, not playlist names, Spotify URIs or recognized words. Routine non-matching wake results are counted in five-minute summaries, which may be delayed by Android sleep; a partial summary is saved when the service stops. These counts may reveal nearby speech/noise activity. Accepted wakes, debounce rejections, timing and lock/screen states still reveal usage patterns.
 - **Copy diagnostic history** puts that history on the clipboard for voluntary sharing. Review it before posting publicly. **Start fresh diagnostic trial** clears the previous timeline; copy it first if needed. Clearing app storage or uninstalling deletes it.
 

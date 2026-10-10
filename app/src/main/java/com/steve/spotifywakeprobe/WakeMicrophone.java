@@ -8,6 +8,7 @@ package com.steve.spotifywakeprobe;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.pm.ApplicationInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -27,11 +28,13 @@ final class WakeMicrophone implements AutoCloseable {
     private static final int READ_SAMPLES = 3200;
     private final Context context;
     private final WakeDetector detector;
+    private final boolean debugCapture;
     private final AudioRecord recorder;
     private final Handler main = new Handler(Looper.getMainLooper());
     private volatile boolean closed;
     private Thread worker;
     private Boolean lastSilenced;
+    private boolean inputReported;
     private long resultAudioMs;
     private final AudioManager.AudioRecordingCallback recordingChanges = new AudioManager.AudioRecordingCallback() {
         @Override public void onRecordingConfigChanged(List<AudioRecordingConfiguration> configs) {
@@ -43,6 +46,7 @@ final class WakeMicrophone implements AutoCloseable {
 
     WakeMicrophone(Context context, Model model) throws IOException {
         this.context = context.getApplicationContext();
+        debugCapture = (this.context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
             throw new SecurityException("Microphone permission required");
         int minimum = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
@@ -81,13 +85,34 @@ final class WakeMicrophone implements AutoCloseable {
                     ready.run();
                 });
                 short[] buffer = new short[READ_SAMPLES];
-                long resultSamples = 0;
+                long resultSamples = 0, levelSamples = 0, levelSquares = 0;
+                int levelPeak = 0, levelZeros = 0, levelReports = 0;
                 while (!closed) {
                     int count = recorder.read(buffer, 0, buffer.length, AudioRecord.READ_BLOCKING);
                     if (closed) break;
                     if (count < 0) throw new IOException("Wake microphone read failed");
                     if (count > 0) resultSamples += count;
                     String words = count > 0 ? detector.accept(buffer, count) : null;
+                    // At most three aggregate level/stage probes; only private debug builds.
+                    if (debugCapture && levelReports < 3 && count > 0) {
+                        for (int i = 0; i < count; i++) {
+                            int value = buffer[i];
+                            levelSquares += (long) value * value;
+                            levelPeak = Math.max(levelPeak, Math.abs(value));
+                            if (value == 0) levelZeros++;
+                        }
+                        levelSamples += count;
+                        if (levelSamples >= SAMPLE_RATE * 30L) {
+                            String probe = "WAKE_INPUT_LEVEL samples=" + levelSamples
+                                    + " rms=" + Math.round(Math.sqrt(levelSquares / (double) levelSamples))
+                                    + " peak=" + levelPeak + " zeros=" + levelZeros
+                                    + " finals=" + detector.candidateFinals + " candidateFlags=" + detector.candidateTokens
+                                    + " verifications=" + detector.verifications + " confirmations=" + detector.confirmations
+                                    + " verifierFlags=" + detector.verifierTokens + " verifierWords=" + detector.lastVerifierWords;
+                            main.post(() -> { if (!closed) DiagnosticHistory.record(context, probe); });
+                            levelReports++; levelSamples = 0; levelSquares = 0; levelPeak = 0; levelZeros = 0;
+                        }
+                    }
                     if (words != null) {
                         String result = new JSONObject().put("text", words).toString();
                         long audioMs = resultSamples * 1000 / SAMPLE_RATE;
@@ -113,6 +138,13 @@ final class WakeMicrophone implements AutoCloseable {
 
     private void reportCapture(AudioRecordingConfiguration config) {
         if (closed || config == null) return;
+        if (debugCapture && !inputReported) {
+            inputReported = true;
+            int type = config.getAudioDevice() == null ? -1 : config.getAudioDevice().getType();
+            DiagnosticHistory.record(context, "WAKE_INPUT_CONFIG type=" + type
+                    + " source=" + config.getClientAudioSource() + " clientRate=" + config.getClientFormat().getSampleRate()
+                    + " deviceRate=" + config.getFormat().getSampleRate());
+        }
         boolean silenced = config.isClientSilenced();
         if (lastSilenced == null || lastSilenced != silenced) {
             lastSilenced = silenced;
