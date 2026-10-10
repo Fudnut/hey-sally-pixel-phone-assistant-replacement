@@ -9,6 +9,10 @@ Updated 10 October 2026 (Australia/Sydney).
 - Licence: GPL-3.0-only with the limited independent-library permission in LINKING_EXCEPTION.md. Complete project source/build scripts accompany the APK; third-party licences and copyright attribution remain intact. SOURCE_BUILD.md and THIRD_PARTY_NOTICES.md describe source/input provenance.
 - Package `com.steve.spotifywakeprobe`, launcher label Spotify Wake Probe, exact wake Hey Sally, public certificate and existing signing inputs are fixed compatibility boundaries. Do not relabel, move/copy keys, expose credentials, overwrite the Pixel installation or rewrite Git history. Ponytail is off.
 
+## Wake false-activation correction
+
+Ordinary speech from a video session was reported to trigger the wake listener at normal volume. Current source removes the wake-only grammar, allowing the existing local model's full vocabulary to compete before the finalized exact Hey Sally gate. Synthetic acoustic regression reproduced five false wakes with the constrained grammar; corrected decoding rejected all 42 unrelated samples and accepted all four intentional wakes. See tests/WAKE_CHECKS.md for runtime qualification and reproduction. This is a source correction; the currently published APK does not contain it. Phone background-speech/intentional-wake/CPU/battery tests remain required before declaring it device-validated. Preserve the Pixel installation. No replacement release was published for this correction.
+
 ## Implementation and verification
 
 Wake recognition is local Vosk with privacy-sensitive microphone capture. Android's configured recognizer captures one command after the beep. Vosk command capture is used only when no system recognition service is available; complete offline commands are not guaranteed. Spotify App Remote controls playback; Web API resolves named music/saved playlists. Replies use media audio routing; the app does not manage Bluetooth pairing or use a car/headset microphone.

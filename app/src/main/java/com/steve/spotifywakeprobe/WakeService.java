@@ -232,8 +232,9 @@ public class WakeService extends Service {
             startDeviceCommand(current);
             return;
         }
-        recognizer = forCommand ? new Recognizer(model, 16000f)
-                : new Recognizer(model, 16000f, "[\"hey sally\", \"[unk]\"]");
+        // A wake-only grammar can force unrelated speech into "hey sally" with
+        // high confidence. Let ordinary words compete before the exact final gate.
+        recognizer = new Recognizer(model, 16000f);
         RecognitionListener listener = new RecognitionListener() {
             @Override public void onPartialResult(String hypothesis) { heard(current, hypothesis, "partial", false); }
             @Override public void onResult(String hypothesis) { heard(current, hypothesis, "text", false); }

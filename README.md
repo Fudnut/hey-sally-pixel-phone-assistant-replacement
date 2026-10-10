@@ -28,6 +28,8 @@ The public APK has a separate signing identity from private trial/self-built APK
 - This replaces the phone's default digital assistant while selected. It requires microphone and notification permissions and displays Android's microphone indicator.
 - Set up and test while stationary. False wakes, missed commands and background/audio-route interactions remain possible.
 
+Ordinary speech during a video session caused repeated false activations at normal volume. Current source corrects the decoder's narrow grammar, with synthetic regression checks; the published APK does not include the correction yet. Phone wake accuracy and battery tests remain required. See [wake checks](tests/WAKE_CHECKS.md).
+
 ## Build from source
 
 Requirements: PowerShell, Git, an Android SDK containing API 37 and its required build tools, and a JDK compatible with Gradle 9.3.1 (JDK 17 or newer supported by that Gradle version).
