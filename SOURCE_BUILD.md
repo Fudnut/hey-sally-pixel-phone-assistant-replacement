@@ -1,4 +1,4 @@
-# Build the alpha.4 project source
+# Build the alpha.5 project source
 
 The release source ZIP contains the exact tracked project tree at the APK's embedded Git revision, plus this build guide and release provenance. Hey Sally is GPL-3.0-only with the limited additional permission in LINKING_EXCEPTION.md. Included independent libraries retain their licences; licence texts are in app/src/main/assets/third-party.
 

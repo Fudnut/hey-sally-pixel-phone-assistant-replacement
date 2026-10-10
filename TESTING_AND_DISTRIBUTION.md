@@ -1,6 +1,6 @@
 # Hey Sally: installation, commands, testing and GitHub distribution
 
-Updated 10 October 2026. App version: `0.2.1-alpha.4` (`versionCode 6`).
+Updated 10 October 2026. Source version: `0.2.1-alpha.5` (`versionCode 7`), prepared but not yet published. The downloadable APK is still 0.2.1-alpha.4 (`versionCode 6`).
 
 ## Overview
 
