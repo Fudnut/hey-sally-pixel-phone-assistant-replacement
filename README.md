@@ -146,6 +146,8 @@ Google Assistant runs as a system component with access that ordinary apps do no
 
 Short device checks have demonstrated locked-screen wake, basic controls, named music, playlist readout/numbered selection, several special collections and cable-free operation. They do not establish a success rate, battery-life figure, all-day reliability or support across Android devices. Playback callbacks alone do not prove audible output.
 
+**Loud music from the phone's own speaker.** At full volume the speaker saturates the microphone and masks the wake phrase. In one device check with full volume, the phrase was reliably heard at about 200 mm but often missed from 600 to 700 mm (2 of 12 attempts at 650 mm). At half volume or lower, wake worked from 1 m or more. Switching the capture source to `VOICE_COMMUNICATION` (platform echo cancellation) did not help (1 of 12), so the app keeps `VOICE_RECOGNITION`. Lower the volume or speak closer when music is loud. These are single-phone observations (Pixel 8 Pro), not measured success rates.
+
 The focused Java checks cover command parsing, regional settings, playlist paging/expiry and destination matching. A separate local controller harness checks cancellation, completion deadlines, sanitized setup failures and Unicode matching. They do not simulate Android audio focus, microphone priority, Spotify availability or actual car-speaker output.
 
 ## Licence
