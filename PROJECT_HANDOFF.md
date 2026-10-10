@@ -1,6 +1,49 @@
 # Public project handoff
 
-Updated 10 October 2026 (Australia/Sydney).
+Updated 11 October 2026 (Australia/Sydney).
+
+## Contact calling planning checkpoint - 11 October 2026
+
+**Status: design and plan review only. No calling code, permissions, phone installation, or real calls have been performed.** Steve requested the feature, a plan, a conflict review, and this checkpoint. Implementation and device trials are the next objective, not authorized by this checkpoint request alone. Ponytail remains off.
+
+### Agreed requirements
+
+- Add outgoing ordinary phone calls using the phone's contact list, hands-free after setup, with the existing exact wake phrase **Hey Sally**. Steve explicitly chose **always confirm by voice**, even for one contact with one number.
+- Contacts can have home and mobile numbers. Resolve the person first, then the requested number. Example: wake -> `Call John Smith` -> `Home or mobile?` -> `Mobile` -> `Call John Smith, mobile?` -> `Yes` -> submit the call. Replies within this conversation should not require another wake phrase.
+- `Call John Smith on mobile` skips number selection, but never skips final confirmation. Multiple people or multiple numbers with the same label require clarification. No uncertain match or silent substitution of home for mobile.
+- Preserve Spotify behavior, package/signing identity, wake implementation, settings and private diagnostics. Calling setup is optional; declining its permissions must not disable Spotify.
+
+### Proposed implementation and limits
+
+- Use Android Contacts Provider for on-demand local name/number lookup and TelecomManager.placeCall() for normal calls through the existing Phone app. Proposed runtime permissions: READ_CONTACTS, CALL_PHONE, READ_PHONE_STATE. No contact upload, new paid service, call-log permission or replacement dialer is proposed. Existing recognition/TTS providers may process spoken names online; document that distinction.
+- Add contact lookup/matching, a small explicit calling-conversation state machine, and Android call dispatch/state handling. Integrate through VoiceCommand.java, WakeService.java, MainActivity.java and AndroidManifest.xml under app/src/main/. Keep matching and conversation rules independently testable; do not reuse fuzzy Spotify matching for call targets.
+- Conversation stages: resolve person -> resolve number -> speak final confirmation -> capture final answer -> consume confirmation once -> submit. Each prompt must finish successfully before opening its answer window; allow audio to drain and start the approximately 10-second answer timeout when recognition is ready. Add an overall conversation deadline during detailed design.
+- No, cancel, timeout, recognition failure, failed/interrupted TTS, incoming call, permission loss, service stop/restart or superseding request must clear pending confirmation. Keep pending contact data in memory only. A later yes must never revive an expired request.
+- Support home/mobile/work and custom or missing labels. Deduplicate equivalent numbers within a person without merging distinct people who share a number. Use numbered choices and distinguishing last digits where labels are insufficient. Before dispatch, recheck permissions and the exact selected contact/number; changes require a new confirmation.
+- Initial scope excludes answering/hanging up by voice, messaging, WhatsApp/VoIP calling, raw spoken-number dialing, emergency numbers, service/MMI codes and unsupported extension/post-dial sequences. Do not strip unsupported characters into a different dialable number. Cancellation prevents submission only; it cannot promise to hang up an already submitted call.
+
+### Review findings that must reach implementation and tests
+
+1. WakeService.finishReply() currently returns to wake listening. Calling needs explicit continuation into the expected answer stage, separate from normal music parsing and playlist selection.
+2. WakeService.fail(), delayed reply callbacks, startup and other listen() paths can reopen the microphone. All must respect shared pending/active-call state. Incoming calls cancel the conversation; recognition and TTS remain suspended during calls. Reconcile actual call state on service recovery before listening again.
+3. VoiceCommand.choose() searches recognition alternatives, and some ordinary commands accept partial speech. Confirmation needs a separate strict parser: only a clear finalized affirmative for the current prompt; never partial fallback or a lower-ranked yes contradicting the primary result. Duplicate callbacks must submit at most once.
+4. placeCall() is a submission API, not proof of connection. Log CALL_REQUESTED, not connected/successful conversation. No automatic redial after uncertain submission. Define bounded recovery for submission failure/no call-state transition without risking a duplicate call.
+5. TelephonyCallback.CallStateListener observes its registered subscription. Dual-SIM needs monitoring across active subscriptions or an explicit initial single-active-SIM support boundary. A default calling SIM must be configured for hands-free operation; an unresolved system SIM picker is a blocker, not a successful call. Do not claim mobile-call callbacks cover every third-party calling app.
+6. Existing Bluetooth music/TTS observations do not prove telephone audio. Test both directions of car call audio, prompt/beep audibility, incoming interruption, full-call microphone suspension and post-hang-up wake recovery. Restore listening without explicitly sending Spotify Resume.
+7. Confirmation is not speaker authentication. Anyone whose speech is accepted may initiate a locked-screen call; background speech remains a risk. Do not add contact names/numbers to logs, notifications, error text, persistent diagnostics or recognizer hint lists. Spoken selection/confirmation necessarily discloses the chosen name to nearby listeners.
+
+### Next steps and verification
+
+1. Complete the concrete design for call-state recovery, timeouts and initial SIM support; obtain implementation direction. Keep this task's deliverable as a checkpoint.
+2. First implementation slice: prove voice-confirmed calling with one agreed test contact on the locked Pixel, including car audio and recovery. Agree the actual test recipient before placing any real call; use mocks until then. Preserve the installed signing identity and data, and arrange installation authorization for this new feature trial.
+3. Build/test the conversation and interruption rules, then contact/number selection, then integrate and run existing Spotify/wake regression checks. Include ambiguous/duplicate contacts, number edits, permission denial/revocation, stale/duplicate yes, TTS failure, recognizer errors, no network/service, SIM selection, incoming calls and service restart.
+4. Checkpoint each verified slice with task-only commits and non-force pushes. Update README/INSTALL and this handoff with actual results and limitations; public release and broad reliability claims are separate work.
+
+Checkpoint validation: tests/check-playlists.ps1 passed (command/parser/language/playlist checks, wake grammar and wake detector); git diff --check passed. No APK build, installation or call test was run for this documentation-only checkpoint.
+
+Planning evidence: inspected local source at 9a89731 and Android documentation for ContactsContract.Phone, TelecomManager.placeCall/isInCall and TelephonyCallback.CallStateListener. No device behavior was verified during planning. An existing unrelated README.md edit was present when this checkpoint began and must be preserved.
+
+References: [TelecomManager](https://developer.android.com/reference/android/telecom/TelecomManager), [call-state subscriptions](https://developer.android.com/reference/android/telephony/TelephonyCallback.CallStateListener), [contact phone fields](https://developer.android.com/reference/android/provider/ContactsContract.CommonDataKinds.Phone).
 
 ## Current state
 
