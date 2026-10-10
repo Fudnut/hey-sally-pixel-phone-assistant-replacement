@@ -14,12 +14,16 @@ import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioRecordingConfiguration;
 import android.media.MediaRecorder;
+import android.media.audiofx.AudioEffect;
 import android.os.Handler;
 import android.os.Looper;
 import org.json.JSONObject;
 import org.vosk.Model;
 import org.vosk.android.RecognitionListener;
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 
 /** Wake-only capture with explicit Android input privacy; no audio is saved. */
@@ -29,6 +33,7 @@ final class WakeMicrophone implements AutoCloseable {
     private final Context context;
     private final WakeDetector detector;
     private final boolean debugCapture;
+    private final boolean abProbe;
     private final AudioRecord recorder;
     private final Handler main = new Handler(Looper.getMainLooper());
     private volatile boolean closed;
@@ -52,8 +57,13 @@ final class WakeMicrophone implements AutoCloseable {
         int minimum = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT);
         if (minimum <= 0) throw new IOException("Wake microphone format unavailable");
+        // A/B experiment only: files/ab_source in a debuggable build selects the capture source.
+        String abSource = debugCapture ? readAbSource(this.context) : null;
+        abProbe = abSource != null;
+        int source = "communication".equals(abSource)
+                ? MediaRecorder.AudioSource.VOICE_COMMUNICATION : MediaRecorder.AudioSource.VOICE_RECOGNITION;
         recorder = new AudioRecord.Builder().setContext(context)
-                .setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+                .setAudioSource(source)
                 .setPrivacySensitive(true)
                 .setAudioFormat(new AudioFormat.Builder().setSampleRate(SAMPLE_RATE)
                         .setChannelMask(AudioFormat.CHANNEL_IN_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
@@ -80,20 +90,41 @@ final class WakeMicrophone implements AutoCloseable {
                 main.post(() -> {
                     if (closed) return;
                     reportCapture(recorder.getActiveRecordingConfiguration());
-                    DiagnosticHistory.record(context, "WAKE_CAPTURE_READY private=" + recorder.isPrivacySensitive());
+                    DiagnosticHistory.record(context, "WAKE_CAPTURE_READY private=" + recorder.isPrivacySensitive()
+                            + (abProbe ? " ab=" + (recorder.getAudioSource() == MediaRecorder.AudioSource.VOICE_COMMUNICATION
+                                    ? "communication" : "recognition") + effects(recorder.getActiveRecordingConfiguration()) : ""));
                     ready.run();
                 });
                 short[] buffer = new short[READ_SAMPLES];
                 long resultSamples = 0, levelSamples = 0, levelSquares = 0;
                 int levelPeak = 0, levelZeros = 0, levelReports = 0;
+                long abSquares = 0, abSamples = 0;
+                int abPeak = 0;
+                // Three 30 s probes normally; ten-second probes for the whole A/B run.
+                int maxReports = abProbe ? 1000 : 3;
+                long levelWindow = SAMPLE_RATE * (abProbe ? 10L : 30L);
                 while (!closed) {
                     int count = recorder.read(buffer, 0, buffer.length, AudioRecord.READ_BLOCKING);
                     if (closed) break;
                     if (count < 0) throw new IOException("Wake microphone read failed");
                     if (count > 0) resultSamples += count;
+                    if (abProbe) for (int i = 0; i < count; i++) {
+                        int value = buffer[i];
+                        abSquares += (long) value * value;
+                        abPeak = Math.max(abPeak, Math.abs(value));
+                        abSamples++;
+                    }
                     String words = count > 0 ? detector.accept(buffer, count) : null;
-                    // At most three aggregate level/stage probes; only private debug builds.
-                    if (debugCapture && levelReports < 3 && count > 0) {
+                    if (abProbe && words != null) {
+                        // Category and level only, never the recognized words.
+                        String kind = words.isEmpty() ? "empty" : WakePhrase.matches(words) ? "wake" : "other";
+                        String line = "AB_RESULT kind=" + kind + " audioMs=" + abSamples * 1000 / SAMPLE_RATE
+                                + " rms=" + Math.round(Math.sqrt(abSquares / (double) Math.max(1, abSamples)))
+                                + " peak=" + abPeak;
+                        abSquares = 0; abSamples = 0; abPeak = 0;
+                        main.post(() -> { if (!closed) DiagnosticHistory.record(context, line); });
+                    }
+                    if (debugCapture && levelReports < maxReports && count > 0) {
                         for (int i = 0; i < count; i++) {
                             int value = buffer[i];
                             levelSquares += (long) value * value;
@@ -101,7 +132,7 @@ final class WakeMicrophone implements AutoCloseable {
                             if (value == 0) levelZeros++;
                         }
                         levelSamples += count;
-                        if (levelSamples >= SAMPLE_RATE * 30L) {
+                        if (levelSamples >= levelWindow) {
                             String probe = "WAKE_INPUT_LEVEL samples=" + levelSamples
                                     + " rms=" + Math.round(Math.sqrt(levelSquares / (double) levelSamples))
                                     + " peak=" + levelPeak + " zeros=" + levelZeros
@@ -128,6 +159,24 @@ final class WakeMicrophone implements AutoCloseable {
             }
         }, "WakeMicrophone");
         worker.start();
+    }
+
+    private static String readAbSource(Context context) {
+        try {
+            return new String(Files.readAllBytes(new File(context.getFilesDir(), "ab_source").toPath()),
+                    StandardCharsets.UTF_8).trim();
+        } catch (IOException | RuntimeException missing) { return null; }
+    }
+
+    // Platform pre-processing the audio framework reports as active on this capture.
+    private static String effects(AudioRecordingConfiguration config) {
+        boolean aec = false, ns = false, agc = false;
+        if (config != null) for (AudioEffect.Descriptor effect : config.getEffects()) {
+            aec |= AudioEffect.EFFECT_TYPE_AEC.equals(effect.type);
+            ns |= AudioEffect.EFFECT_TYPE_NS.equals(effect.type);
+            agc |= AudioEffect.EFFECT_TYPE_AGC.equals(effect.type);
+        }
+        return " aec=" + aec + " ns=" + ns + " agc=" + agc;
     }
 
     // Captured audio since recording began or the preceding finalized result.
