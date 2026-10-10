@@ -1,13 +1,13 @@
-# Install and test Hey Sally 0.2.1-alpha.4
+# Install and test Hey Sally 0.2.1-alpha.5
 
 This is an experimental, precompiled Android APK. You do not need Android Studio, a compiler or a USB cable to install it. The app appears on your phone as **Spotify Wake Probe**; its wake phrase is **Hey Sally**.
 
 ## Download
 
-- [Download the ARM64 APK](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.4/Hey-Sally-0.2.1-alpha.4-arm64.apk)
-- [Release notes and all assets](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/tag/v0.2.1-alpha.4)
-- [Project source and build instructions](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.4/Hey-Sally-0.2.1-alpha.4-source.zip)
-- [APK/asset checksums](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.4/SHA256SUMS.txt)
+- [Download the ARM64 APK](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.5/Hey-Sally-0.2.1-alpha.5-arm64.apk)
+- [Release notes and all assets](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/tag/v0.2.1-alpha.5)
+- [Project source and build instructions](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.5/Hey-Sally-0.2.1-alpha.5-source.zip)
+- [APK/asset checksums](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.5/SHA256SUMS.txt)
 
 Choose the `.apk` asset, not GitHub's source-code ZIP. Requires an **ARM64 phone on Android 14 or later**, Spotify installed, and Spotify Developer access. Device testing so far is limited to a Pixel 8 Pro on Android 17; other phones, battery use and long-term reliability are not established.
 
@@ -22,7 +22,7 @@ Choose the `.apk` asset, not GitHub's source-code ZIP. Requires an **ARM64 phone
 Optional checksum check on a computer:
 
 ```powershell
-Get-FileHash ./Hey-Sally-0.2.1-alpha.4-arm64.apk -Algorithm SHA256
+Get-FileHash ./Hey-Sally-0.2.1-alpha.5-arm64.apk -Algorithm SHA256
 ```
 
 Compare with `SHA256SUMS.txt` from the same release. The APK is signed with a dedicated public-release certificate. Future releases should use that same certificate.
@@ -79,7 +79,7 @@ See [all commands, alternate forms and limitations](TESTING_AND_DISTRIBUTION.md#
 
 Test while stationary. Confirm actual audible results, first with the screen on and then locked/screen off. Note whether music was playing, your audio route, repeated wake attempts, unwanted beeps and spoken failures. One repeated Hey Sally wake has already been reported; no overall success rate is established.
 
-Open [GitHub Issues](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/issues). Include version **0.2.1-alpha.4**, phone/Android/Spotify versions, command language, lock/screen state, phone/Bluetooth output, steps, expected/actual result and approximate time with timezone.
+Open [GitHub Issues](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/issues). Include version **0.2.1-alpha.5**, phone/Android/Spotify versions, command language, lock/screen state, phone/Bluetooth output, steps, expected/actual result and approximate time with timezone.
 
 In the app, tap **Refresh status** then **Copy diagnostic history**. Paste into a private note and review before sharing only relevant events. Do not post passwords, tokens, account emails or full ADB logs. The log holds the newest 1,024 events; **Start fresh diagnostic trial** clears prior history. Save it first if needed.
 
@@ -91,7 +91,7 @@ Tap **Stop probe** to stop microphone listening. Select your previous digital as
 
 ## Privacy and prerelease status
 
-This alpha.4 release uses GPL version 3 only with a limited permission for its independently licensed libraries; see [LICENSE](LICENSE) and [LINKING_EXCEPTION.md](LINKING_EXCEPTION.md). The release includes the project source and build scripts.
+This alpha.5 release uses GPL version 3 only with a limited permission for its independently licensed libraries; see [LICENSE](LICENSE) and [LINKING_EXCEPTION.md](LINKING_EXCEPTION.md). The release includes the project source and build scripts.
 
 Wake recognition runs locally with Vosk. App-owned code does not save audio/transcripts. Commands may use the configured Android speech provider online, spoken playlist names go to the TTS engine, and music searches/authorization go to Spotify. Tokens are encrypted using Android Keystore. There is no Gemini integration or hosted AI backend.
 

@@ -1,6 +1,6 @@
 # Hey Sally: installation, commands, testing and GitHub distribution
 
-Updated 10 October 2026. Source version: `0.2.1-alpha.5` (`versionCode 7`), prepared but not yet published. The downloadable APK is still 0.2.1-alpha.4 (`versionCode 6`).
+Updated 10 October 2026. App version: `0.2.1-alpha.5` (`versionCode 7`).
 
 ## Overview
 
@@ -8,7 +8,7 @@ Say **Hey Sally**, wait for the ready beep, then speak one Spotify command. Use 
 
 The Android app is still called **Spotify Wake Probe** and uses package `com.steve.spotifywakeprobe`. Hey Sally is the current wake phrase; Hey Spotify is no longer accepted by the exact text matcher. This remains an experimental Spotify controller, not a general phone assistant or an official Spotify product.
 
-The source is public, Issues are enabled, and contributions can be proposed now. A maintainer-signed **0.2.1-alpha.4** limited-test prerelease APK is offered with [phone installation instructions](INSTALL.md).
+The source is public, Issues are enabled, and contributions can be proposed now. A maintainer-signed **0.2.1-alpha.5** limited-test prerelease APK is offered with [phone installation instructions](INSTALL.md).
 
 The user confirmed Hey Sally activation, audible resume and audible next-song playback on 10 October. One next-song test needed the wake phrase twice. Those short results do not establish long-duration reliability; the screen/lock state was not separately confirmed in that follow-up. These observations do not validate the exact published APK.
 
@@ -171,7 +171,7 @@ Include:
 
 Open the app, tap **Refresh status**, then **Copy diagnostic history**. Paste into a private note, review it, and attach only relevant redacted events to an issue. The app stores up to 1,024 events; busy use can overwrite earlier entries. Copy history each evening during a multi-day trial. **Start fresh diagnostic trial** clears it, so save any history you need first. Do not reset it merely because a command failed.
 
-In alpha.4, `WAKE_RESULT class=accepted ms=...` records exact wake-phrase matches individually. Other and empty results are counted in `WAKE_RESULTS_SUMMARY other=... empty=... ms=...`, normally once every five minutes (Android sleep can delay it), with a partial summary on service stop. Routine results do not carry individual timestamps or audio durations. Summary counts may reveal nearby speech/noise activity; accepted wakes and debounce rejections retain individual timestamps. Starting a fresh diagnostic trial also clears pending counts. Accepted means an exact wake-phrase match; `WAKE_IGNORED_DEBOUNCE` then identifies one rejected by the existing five-second gate. Summary milliseconds describe the elapsed counting window. Accepted-result milliseconds measure captured audio since recording started or the preceding finalized result, including silence; they are not latency from when you spoke the wake phrase. No recognized words or audio are stored.
+From alpha.4, `WAKE_RESULT class=accepted ms=...` records exact wake-phrase matches individually. Other and empty results are counted in `WAKE_RESULTS_SUMMARY other=... empty=... ms=...`, normally once every five minutes (Android sleep can delay it), with a partial summary on service stop. Routine results do not carry individual timestamps or audio durations. Summary counts may reveal nearby speech/noise activity; accepted wakes and debounce rejections retain individual timestamps. Starting a fresh diagnostic trial also clears pending counts. Accepted means an exact wake-phrase match; `WAKE_IGNORED_DEBOUNCE` then identifies one rejected by the existing five-second gate. Summary milliseconds describe the elapsed counting window. Accepted-result milliseconds measure captured audio since recording started or the preceding finalized result, including silence; they are not latency from when you spoke the wake phrase. No recognized words or audio are stored.
 
 Ordinary command failures carry only a fixed reason in `COMMAND_RESULT ERROR reason=AUTH|TIMEOUT|NETWORK|NO_MATCH|REMOTE`. These categories help distinguish authorization, timeouts, connectivity, missing matches and other remote failures; exception text, URLs and recognized words are omitted. The spoken failure remains generic. Setup-screen local authorization failures show DECLINED, STATE_MISMATCH or CALLBACK; other failures show the fixed reason; a failed token exchange also shows its HTTP status, such as `AUTH (HTTP 400)`. Include this safe detail in setup bug reports. Provider response bodies, exception messages, tokens and URLs are not displayed.
 
@@ -199,7 +199,7 @@ No contributor receives direct write access merely by submitting a PR. Maintaine
 
 ## GitHub prerelease status
 
-The limited-test APK is **0.2.1-alpha.4**, signed with a dedicated public-release certificate. [INSTALL.md](INSTALL.md) is the phone-first download/setup guide; [RELEASE_SIGNING.md](RELEASE_SIGNING.md) identifies the public certificate and update policy.
+The limited-test APK is **0.2.1-alpha.5**, signed with a dedicated public-release certificate. [INSTALL.md](INSTALL.md) is the phone-first download/setup guide; [RELEASE_SIGNING.md](RELEASE_SIGNING.md) identifies the public certificate and update policy.
 
 | Item | State for this alpha |
 | --- | --- |
