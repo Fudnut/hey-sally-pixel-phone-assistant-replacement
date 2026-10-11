@@ -73,7 +73,7 @@ For every command, say **Hey Sally**, **wait for the beep**, then speak the comm
 
 If Spotify was paused, **next song** does not explicitly start it; use **resume** first. If there is no music context to resume, start a song/playlist in Spotify or request named music. Wait for a spoken reply to finish before the next wake. Playlist numbers expire after three minutes.
 
-See [all commands, alternate forms and limitations](TESTING_AND_DISTRIBUTION.md#every-current-command), including Radio and Local Files. This is a Spotify controller, not a general assistant for calls/messages or other phone functions.
+See [all commands, alternate forms and limitations](TESTING_AND_DISTRIBUTION.md#every-current-command), including Radio. This is a Spotify controller, not a general assistant for calls/messages or other phone functions.
 
 ## 5. Test and report a bug
 

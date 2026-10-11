@@ -131,7 +131,6 @@ public final class PlaylistBrowseCheck {
         command("play the the", "PLAY", "the the");
         special("play Liked Songs", "liked", "");
         special("play my liked songs.", "liked", "");
-        special("play Local Files", "local", "");
         special("play DJ", "dj", "");
         special("play Spotify DJ", "dj", "");
         special("play D J", "dj", "");

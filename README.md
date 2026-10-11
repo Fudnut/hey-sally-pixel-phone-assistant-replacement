@@ -79,7 +79,6 @@ The limited-test APK includes expanded control phrasing, numeric songs outside p
 | Play DJ | Play Spotify DJ if available to your account |
 | Play Daily Mix two / Play Made For You 02 | Request Daily Mix 2; supported numbers are 1–6 |
 | Play radio followed by an artist | Match a recommended or saved Radio playlist |
-| Play Local Files | Use a native collection if exposed, otherwise a saved playlist named Local Files |
 
 Controls accept filler words such as `please`, `the` and `music`: for example, `pause the music`, `skip this song` and `play the next song`. Named song, artist and playlist requests retain their titles.
 
@@ -87,7 +86,7 @@ Playlist numbering expires three minutes after the last successful readout. `pla
 
 Radio cannot generate any artist's station on demand. If a station is absent from recommendations, open the artist in Spotify, choose **Go to Radio**, and save the station before retrying the voice command. The save-and-retry workflow has passed a device test.
 
-Made For You means Daily Mix 1–6 here. Native Local Files was not exposed on the tested device; local tracks in a normal playlist still need to be playable in Spotify on that phone. Availability of DJ and personalized collections depends on Spotify and the account.
+Made For You means Daily Mix 1–6 here. Local files are not a voice command: put them in a normal Spotify playlist and say play playlist followed by its name. Availability of DJ and personalized collections depends on Spotify and the account.
 
 ## Speech and audio
 

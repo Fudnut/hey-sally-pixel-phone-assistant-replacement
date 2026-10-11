@@ -97,7 +97,6 @@ final class VoiceCommand {
         query = query.replaceAll("[.!?,]+$", "").trim();
         switch (query) {
             case "liked songs": case "my liked songs": return new VoiceCommand(Kind.PLAY_SPECIAL, "", "liked");
-            case "local files": case "my local files": return new VoiceCommand(Kind.PLAY_SPECIAL, "", "local");
             case "dj": case "d j": case "spotify dj": case "the dj":
                 return new VoiceCommand(Kind.PLAY_SPECIAL, "", "dj");
             default: break;

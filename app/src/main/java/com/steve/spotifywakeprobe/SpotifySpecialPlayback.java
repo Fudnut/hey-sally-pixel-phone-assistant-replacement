@@ -117,7 +117,7 @@ final class SpotifySpecialPlayback {
 
     private void libraryOrUnavailable() {
         if (finished) return;
-        if (!(command.type.equals("radio") || command.type.equals("mix") || command.type.equals("local"))) {
+        if (!(command.type.equals("radio") || command.type.equals("mix"))) {
             finish(SpecialDestination.unavailable(command));
             return;
         }
@@ -127,29 +127,9 @@ final class SpotifySpecialPlayback {
                 consider(new ListItem(entry.uri, entry.uri, null, entry.name, "", true, false), true);
             }
             DiagnosticHistory.record(context, "SPECIAL_LIBRARY " + command.type + " matches=" + matches.size());
-            if (matches.size() == 0) {
-                if (command.type.equals("local")) tryLocalFilesUri(0);
-                else finish(SpecialDestination.unavailable(command));
-            } else playMatch();
-        }, error -> {
-            if (command.type.equals("local")) tryLocalFilesUri(0); else finish(error);
-        });
-    }
-
-    // Spotify's Local Files collection is client-side: neither the Web API playlist list nor the
-    // App Remote content tree exposes it, so ask the Spotify app to play its own addresses directly.
-    private static final String[] LOCAL_FILES_URIS = {"spotify:internal:local-files", "spotify:collection:local-files"};
-
-    private void tryLocalFilesUri(int index) {
-        if (finished) return;
-        if (remote == null || index >= LOCAL_FILES_URIS.length) { finish(SpecialDestination.unavailable(command)); return; }
-        DiagnosticHistory.record(context, "SPECIAL_LOCAL_URI attempt=" + index);
-        if (index == 0) { beforePlay.run(); if (finished) return; }
-        remote.getPlayerApi().play(LOCAL_FILES_URIS[index]).setResultCallback(ignored -> {
-            if (finished) return;
-            SpotifyController.dispatchMediaPlay(context);
-            finish(null);
-        }).setErrorCallback(error -> tryLocalFilesUri(index + 1));
+            if (matches.size() == 0) finish(SpecialDestination.unavailable(command));
+            else playMatch();
+        }, this::finish);
     }
 
     private void playMatch() {

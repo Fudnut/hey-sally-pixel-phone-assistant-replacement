@@ -45,7 +45,6 @@ final class SpecialDestination {
         String expected;
         switch (command.type) {
             case "liked": expected = "Liked Songs"; break;
-            case "local": expected = "Local Files"; break;
             case "dj": expected = "DJ"; break;
             case "mix": expected = "Daily Mix " + command.query; break;
             case "radio": expected = command.query + " Radio"; break;
@@ -64,7 +63,6 @@ final class SpecialDestination {
 
     static String unavailable(VoiceCommand command) {
         switch (command.type) {
-            case "local": return "Local Files isn't available here. Put those tracks in a Spotify playlist named Local Files, then try again.";
             case "radio":
                 String heard = command.query.replaceAll("[\\p{Cntrl}]", " ");
                 if (heard.length() > 48) heard = heard.substring(0, 48);

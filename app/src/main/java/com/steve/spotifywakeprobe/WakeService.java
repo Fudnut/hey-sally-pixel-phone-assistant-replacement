@@ -361,7 +361,7 @@ public class WakeService extends Service {
                         new ArrayList<>(java.util.List.of("play playlist", "play my playlist",
                                 "play next song", "pause", "resume", "previous song",
                                 "list my playlists", "more playlists", "play number two",
-                                "play liked songs", "play local files", "play DJ", "play Daily Mix one",
+                                "play liked songs", "play DJ", "play Daily Mix one",
                                 "play Made For You two", "play radio")))
                 .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         deviceCommand.startListening(command);
