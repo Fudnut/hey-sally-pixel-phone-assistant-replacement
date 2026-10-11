@@ -359,7 +359,7 @@ public class WakeService extends Service {
                 .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
                 .putStringArrayListExtra(RecognizerIntent.EXTRA_BIASING_STRINGS,
                         new ArrayList<>(java.util.List.of("play playlist", "play my playlist",
-                                "play next song", "pause", "resume", "previous song",
+                                "play next song", "volume up", "volume down", "pause", "resume", "previous song",
                                 "list my playlists", "more playlists", "play number two",
                                 "play liked songs", "play DJ", "play Daily Mix one",
                                 "play Made For You two", "play radio")))
@@ -502,6 +502,16 @@ public class WakeService extends Service {
                     try { listen(false); } catch (IOException | RuntimeException failed) { fail(failed); }
                 }
             });
+            return;
+        }
+        if (command.kind == VoiceCommand.Kind.VOLUME_UP || command.kind == VoiceCommand.Kind.VOLUME_DOWN) {
+            // Two steps of the media volume, the stream Spotify and spoken replies use. Silent: no reply.
+            AudioManager audio = getSystemService(AudioManager.class);
+            int direction = command.kind == VoiceCommand.Kind.VOLUME_UP ? AudioManager.ADJUST_RAISE : AudioManager.ADJUST_LOWER;
+            audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0);
+            audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0);
+            commandStatus(commandLabel, "Spotify: volume");
+            listen(false);
             return;
         }
         if (command.kind == VoiceCommand.Kind.LIST_PLAYLISTS) {

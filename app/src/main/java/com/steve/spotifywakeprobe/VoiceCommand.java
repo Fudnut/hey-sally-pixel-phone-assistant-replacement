@@ -8,7 +8,7 @@ package com.steve.spotifywakeprobe;
 import java.util.Locale;
 
 final class VoiceCommand {
-    enum Kind { OPEN, PAUSE, RESUME, NEXT, PREVIOUS, PLAY, LIST_PLAYLISTS, MORE_PLAYLISTS, PLAY_NUMBER, PLAY_SPECIAL }
+    enum Kind { OPEN, PAUSE, RESUME, NEXT, PREVIOUS, PLAY, LIST_PLAYLISTS, MORE_PLAYLISTS, PLAY_NUMBER, PLAY_SPECIAL, VOLUME_UP, VOLUME_DOWN }
     final Kind kind;
     final String query;
     final String type;
@@ -48,6 +48,10 @@ final class VoiceCommand {
             case "play next song": case "play next track": case "skip": case "skip song": case "skip track": return new VoiceCommand(Kind.NEXT, "", "");
             case "previous": case "previous song": case "previous track":
             case "play previous song": case "play previous track": return new VoiceCommand(Kind.PREVIOUS, "", "");
+            case "volume up": case "turn volume up": case "turn up volume": case "turn it up": case "louder":
+            case "increase volume": case "raise volume": case "volume louder": return new VoiceCommand(Kind.VOLUME_UP, "", "");
+            case "volume down": case "turn volume down": case "turn down volume": case "turn it down": case "quieter":
+            case "lower volume": case "decrease volume": case "reduce volume": case "volume quieter": return new VoiceCommand(Kind.VOLUME_DOWN, "", "");
             default: break;
         }
         if (!words.startsWith("play ")) return null;
@@ -117,7 +121,7 @@ final class VoiceCommand {
 
     boolean acceptsPartial() {
         return kind == Kind.OPEN || kind == Kind.PAUSE || kind == Kind.RESUME
-                || kind == Kind.NEXT || kind == Kind.PREVIOUS;
+                || kind == Kind.NEXT || kind == Kind.PREVIOUS || kind == Kind.VOLUME_UP || kind == Kind.VOLUME_DOWN;
     }
 
     private static Integer spokenNumber(String text) {

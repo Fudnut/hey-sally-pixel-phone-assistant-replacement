@@ -131,6 +131,10 @@ public final class PlaylistBrowseCheck {
         command("play the the", "PLAY", "the the");
         special("play Liked Songs", "liked", "");
         special("play my liked songs.", "liked", "");
+        for (String up : new String[]{"volume up", "turn the volume up", "louder", "turn it up"})
+            if (VoiceCommand.parse(up).kind != VoiceCommand.Kind.VOLUME_UP) throw new AssertionError(up);
+        for (String down : new String[]{"volume down", "turn the volume down", "quieter", "lower the volume"})
+            if (VoiceCommand.parse(down).kind != VoiceCommand.Kind.VOLUME_DOWN) throw new AssertionError(down);
         special("play DJ", "dj", "");
         special("play Spotify DJ", "dj", "");
         special("play D J", "dj", "");

@@ -72,6 +72,7 @@ The limited-test APK includes expanded control phrasing, numeric songs outside p
 | Play song Stand by Me | Search for a song |
 | Play artist The Beatles | Search for an artist |
 | Play playlist followed by its name | Match a saved playlist |
+| Volume up / Volume down (also louder, quieter, turn it up/down) | Change the phone's media volume by two steps; no spoken reply |
 | List my playlists | Read five playlist names with numbers |
 | More playlists | Read the next page |
 | Play two / Play number two | Select a number already read aloud while playlist browsing is active |
