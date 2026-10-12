@@ -120,7 +120,7 @@ The table describes the current release. Include the installed app version in bu
 | Spotify DJ | **Hey Sally** → **wait for beep** → `play DJ` | `play D J`, `play Spotify DJ`, `play the DJ` | Requests the actual DJ experience if exposed for the account. |
 | Daily Mix | **Hey Sally** → **wait for beep** → `play Daily Mix two` | `play Made For You two`, `play Daily Mix 2`, `play Made For You 02`; optional `number`, `zero` or `oh` before a valid number | Numbers 1–6 only. Made For You means Daily Mix here, not every personalized Spotify collection. |
 | Artist Radio | **Hey Sally** → **wait for beep** → `play radio <artist>` | `play <artist> radio`, `play radio by <artist>`, `play radio for <artist>`, `play radio artist <artist>` | Matches an exact recommended or saved Radio playlist; does not create arbitrary new artist stations. |
-| Local Files | **Hey Sally** → **wait for beep** → `play Local Files` | `play my Local Files` | Uses the native collection if exposed, otherwise an exact saved playlist named Local Files. Real local-track fallback playback remains untested. |
+| Local Files | **Hey Sally** → **wait for beep** → `play Local Files` | `play my Local Files` | Only a shortcut for an exact saved playlist named Local Files; Spotify's own Local Files collection could not be started by the app. For local tracks use `play playlist` and the playlist's name. Real local-track playback remains untested by the automated checks. |
 
 A request such as `play number of the beast` or `play number 9 dream` searches the full title; `number` selects a playlist only when the whole remainder is a number. The parser also tolerates the observed fallback transcripts `regime` and `review` as resume, and some number homophones such as `to`/`too` for two. These are recognition accommodations, not recommended commands. There is no current voice command for volume, shuffle, repeat, queue editing, phone calls, messages, changing the wake phrase or stopping the probe.
 
@@ -135,11 +135,11 @@ The snapshot expires three minutes after the last successful page finishes speak
 
 Named playlist lookup searches at most 1,000 saved playlists. It first compares names with Unicode letters/numbers preserved and accents/punctuation folded. It can then choose a uniquely best fuzzy match within a distance of at most two edits or 40% of the saved name length, whichever is larger. This can choose a similarly named playlist; numbered selection from a freshly read list is more predictable. Artist/song exact-name comparisons also preserve Unicode and fold accents.
 
-### Radio and Local Files preparation
+### Radio and local files preparation
 
 If Radio is missing from recommendations, open the artist in Spotify, choose **Go to Radio**, save the station, then retry. Save stations before your journey. The saved-station workflow has passed a user test, but availability is not guaranteed for every artist/account.
 
-For Local Files, first make the tracks play normally inside Spotify on the phone, then create/populate a regular library playlist named **Local Files** for the fallback. The tested device did not expose a native Local Files collection. A missing destination receives a spoken explanation rather than an unrelated song search.
+For local files, first make the tracks play normally inside Spotify on the phone, then add them to a regular library playlist and call it by name, for example `play playlist Local Music`. A playlist named exactly **Local Files** also works with `play Local Files`. The tested device did not expose Spotify's native Local Files collection. A missing destination receives a spoken explanation rather than an unrelated song search.
 
 ## Everyday use and troubleshooting
 

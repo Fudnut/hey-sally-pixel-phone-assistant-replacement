@@ -28,7 +28,7 @@ The public APK has a separate signing identity from private trial/self-built APK
 - This replaces the phone's default digital assistant while selected. It requires microphone and notification permissions and displays Android's microphone indicator.
 - Set up and test while stationary. False wakes, missed commands and background/audio-route interactions remain possible.
 
-Ordinary speech during a video session caused repeated false activations at normal volume. Current source decodes against a closed vocabulary of Hey Sally plus about 250 ordinary words, so unrelated speech has other words to land on, and still requires an exact Hey Sally result. In private Pixel trials with the maintainer's voice and the phone's own microphone, intentional wakes were accepted at about 40 cm, at 1.5 m, in a car, with music playing, in a pocket with the screen off, and with a Bluetooth device connected (5 of 6 attempts in each of the last three trials), and no trial produced a false wake: not a five-minute video-call speech window, about twelve minutes of loud car audio, nor 35 minutes of a quiet room. Limits: with music from the phone's own speaker near full volume, wake needed the speaker within about 20 cm, while at 50% volume or lower it worked from a metre or more away. Wake does not use a Bluetooth microphone. Continuous listening is not cheap: over 35 minutes screen-off on battery the whole phone used about 76 mAh (roughly 130 mA, about 1.5% of capacity) and the app process averaged about a quarter of one CPU core. That would be very roughly 60% of a battery per 24 hours if it continued, but it is one short, uncontrolled sample. Other voices and accents are untested. These changes are in 0.2.1-alpha.5, whose exact public APK has not itself been installed on a phone; the trials above used a private debug build of the same wake source. See [wake checks](tests/WAKE_CHECKS.md).
+Ordinary speech during a video session caused repeated false activations at normal volume. Current source decodes against a closed vocabulary of Hey Sally plus about 250 ordinary words, so unrelated speech has other words to land on, and still requires an exact Hey Sally result. In private Pixel trials with the maintainer's voice and the phone's own microphone, intentional wakes were accepted at about 40 cm, at 1.5 m, in a car, with music playing, in a pocket with the screen off, and with a Bluetooth device connected (5 of 6 attempts in each of the last three trials), and no trial produced a false wake: not a five-minute video-call speech window, about twelve minutes of loud car audio, nor 35 minutes of a quiet room. Limits: loud music from the phone's own speaker masks the wake phrase (see [Limitations](#limitations-and-verification)). Wake does not use a Bluetooth microphone. Continuous listening is not cheap: over 35 minutes screen-off on battery the whole phone used about 76 mAh (roughly 130 mA, about 1.5% of capacity) and the app process averaged about a quarter of one CPU core. That would be very roughly 60% of a battery per 24 hours if it continued, but it is one short, uncontrolled sample. Other voices and accents are untested. These changes are in 0.2.1-alpha.5, whose exact public APK has not itself been installed on a phone; the trials above used a private debug build of the same wake source. See [wake checks](tests/WAKE_CHECKS.md).
 
 ## Build from source
 
@@ -71,7 +71,7 @@ The limited-test APK includes expanded control phrasing, numeric songs outside p
 | Next song / Previous song | Change track |
 | Play song Stand by Me | Search for a song |
 | Play artist The Beatles | Search for an artist |
-| Play playlist followed by its name | Match a saved playlist |
+| Play playlist followed by its name | Match a saved playlist, including one you built from your local files (see below) |
 | List my playlists | Read five playlist names with numbers |
 | More playlists | Read the next page |
 | Play two / Play number two | Select a number already read aloud while playlist browsing is active |
@@ -79,7 +79,7 @@ The limited-test APK includes expanded control phrasing, numeric songs outside p
 | Play DJ | Play Spotify DJ if available to your account |
 | Play Daily Mix two / Play Made For You 02 | Request Daily Mix 2; supported numbers are 1–6 |
 | Play radio followed by an artist | Match a recommended or saved Radio playlist |
-| Play Local Files | Use a native collection if exposed, otherwise a saved playlist named Local Files |
+| Play Local Files | Only a shortcut for a saved playlist named exactly Local Files. Spotify's own Local Files collection could not be started by the app. To play local tracks, add them to a playlist and say `Play playlist` and its name |
 
 Controls accept filler words such as `please`, `the` and `music`: for example, `pause the music`, `skip this song` and `play the next song`. Named song, artist and playlist requests retain their titles.
 
@@ -87,7 +87,9 @@ Playlist numbering expires three minutes after the last successful readout. `pla
 
 Radio cannot generate any artist's station on demand. If a station is absent from recommendations, open the artist in Spotify, choose **Go to Radio**, and save the station before retrying the voice command. The save-and-retry workflow has passed a device test.
 
-Made For You means Daily Mix 1–6 here. Native Local Files was not exposed on the tested device; local tracks in a normal playlist still need to be playable in Spotify on that phone. Availability of DJ and personalized collections depends on Spotify and the account.
+Made For You means Daily Mix 1–6 here. Availability of DJ and personalized collections depends on Spotify and the account.
+
+**Local files.** Spotify's Local Files collection was not exposed to the app on the tested device, so it cannot be started directly by voice. Instead, in Spotify, add your local tracks to a normal playlist, make sure they play on that phone, then call the playlist by name, for example `Play playlist Local Music`. A playlist named exactly Local Files also works with `Play Local Files`; if none exists the app says so aloud rather than playing something unrelated. Local tracks only play on the phone that holds the files.
 
 ## Speech and audio
 
@@ -102,7 +104,7 @@ Wake capture requests Android's privacy-sensitive microphone mode to reduce inte
 - Spoken playlist names go to the configured text-to-speech engine, whose voice may use network processing.
 - Named music queries and Spotify authorization requests go to Spotify. No Gemini integration or project-operated backend is used.
 - OAuth tokens are stored encrypted using Android Keystore. Android backup and device transfer are disabled for app data.
-- Private debug builds can report up to three 30-second microphone-level and wake-stage summaries after capture starts, plus input type/sample-rate metadata. These contain aggregate levels and fixed keyword flags/counts; no audio or transcripts. Release builds do not emit these probes.
+- Private debug builds can report up to three 30-second microphone-level and wake-stage summaries after capture starts, plus input type/sample-rate metadata. A debug-only switch can also compare capture sources, adding the source name, echo-cancellation/noise-suppression/gain flags and per-category level results. These contain aggregate levels and fixed keyword flags/counts; no audio, recognized words or transcripts. Release builds do not emit these probes or honour the switch.
 - Up to 1,024 diagnostic events remain in app-private storage. They contain timestamps, command categories, counts and outcomes, not playlist names, Spotify URIs or recognized words. Routine non-matching wake results are counted in five-minute summaries, which may be delayed by Android sleep; a partial summary is saved when the service stops. These counts may reveal nearby speech/noise activity. Accepted wakes, debounce rejections, timing and lock/screen states still reveal usage patterns.
 - **Copy diagnostic history** puts that history on the clipboard for voluntary sharing. Review it before posting publicly. **Start fresh diagnostic trial** clears the previous timeline; copy it first if needed. Clearing app storage or uninstalling deletes it.
 
@@ -113,7 +115,7 @@ Hey Sally began as a hands-free Spotify controller. The longer-term aim is a sma
 Candidates, roughly in the order being considered:
 
 1. **Alarms and timers**: set, stop and snooze, using Android's public alarm and timer intents.
-2. **Calls and texts by contact name**: needs contacts, phone and possibly SMS permissions.
+2. **Calls and texts by contact name**: needs contacts, phone and possibly SMS permissions. Outgoing calls are in design only (a call would always be confirmed by voice before dialling); no code, permissions or device tests exist yet, and texts are outside the initial scope.
 3. **Quick controls**: torch, volume, media keys for other players, do-not-disturb.
 4. **Navigation hand-off**: "navigate home" through the Maps intent.
 5. **Calendar**: what is on today, add an event.
@@ -146,7 +148,7 @@ Google Assistant runs as a system component with access that ordinary apps do no
 
 Short device checks have demonstrated locked-screen wake, basic controls, named music, playlist readout/numbered selection, several special collections and cable-free operation. They do not establish a success rate, battery-life figure, all-day reliability or support across Android devices. Playback callbacks alone do not prove audible output.
 
-Switching the wake microphone to `VOICE_COMMUNICATION` (platform echo cancellation) did not help with loud phone-speaker music (1 of 12 wakes at 650 mm versus 2 of 12 with the default `VOICE_RECOGNITION`), so the app keeps `VOICE_RECOGNITION`; this is a single-phone observation on a Pixel 8 Pro.
+**Loud music from the phone's own speaker.** At full volume the speaker saturates the microphone and masks the wake phrase. In one device check with full volume, the phrase was reliably heard at about 200 mm but often missed from 600 to 700 mm (2 of 12 attempts at 650 mm). At half volume or lower, wake worked from 1 m or more. Switching the capture source to `VOICE_COMMUNICATION` (platform echo cancellation) did not help (1 of 12), so the app keeps `VOICE_RECOGNITION`. Lower the volume or speak closer when music is loud. These are single-phone observations (Pixel 8 Pro), not measured success rates.
 
 The focused Java checks cover command parsing, regional settings, playlist paging/expiry and destination matching. A separate local controller harness checks cancellation, completion deadlines, sanitized setup failures and Unicode matching. They do not simulate Android audio focus, microphone priority, Spotify availability or actual car-speaker output.
 
