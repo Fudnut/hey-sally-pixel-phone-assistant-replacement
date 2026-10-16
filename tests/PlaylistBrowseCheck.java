@@ -7,8 +7,10 @@ package com.steve.spotifywakeprobe;
 
 public final class PlaylistBrowseCheck {
     public static void main(String[] args) {
-        for (String phrase : new String[]{"play number two please", "play number two.", "play number two please.", "play two please"})
+        for (String phrase : new String[]{"play number two please", "play number two.", "play number two please.", "play two please",
+                "play two, please", "play number two, please", "play two, please.", "please play two", "please, play number two"})
             command(phrase, "PLAY_NUMBER", "2");
+        command("please play song Yesterday", "PLAY", "yesterday");
         for (String top : new String[]{"play number tree", "play number free"}) {
             VoiceCommand chosen = VoiceCommand.choose(java.util.List.of(top, "play number two"));
             if (chosen.kind != VoiceCommand.Kind.PLAY_NUMBER || !chosen.query.equals("2"))

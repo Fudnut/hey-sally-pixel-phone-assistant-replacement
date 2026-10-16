@@ -12,8 +12,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
@@ -25,6 +27,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.speech.RecognitionService;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
@@ -65,6 +68,7 @@ public class WakeService extends Service {
     private SpeechRecognizer deviceCommand;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable deviceTimeout;
+    private Runnable voskCommandTimeout;
     private long commandStartedAt;
     private long speechStartedAt;
     private AudioFocusRequest focusRequest;
@@ -114,10 +118,21 @@ public class WakeService extends Service {
             stopSelf();
             return START_NOT_STICKY;
         }
-        getSystemService(NotificationManager.class).createNotificationChannel(
-                new NotificationChannel("wake", "Wake probe", NotificationManager.IMPORTANCE_LOW));
-        startForeground(NOTIFICATION_ID, notification("Loading offline model"),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
+        try {
+            getSystemService(NotificationManager.class).createNotificationChannel(
+                    new NotificationChannel("wake", "Wake probe", NotificationManager.IMPORTANCE_LOW));
+            startForeground(NOTIFICATION_ID, notification("Loading offline model"),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
+        } catch (RuntimeException error) {
+            // Android 14+ can refuse a microphone foreground service started from the
+            // background (for example a START_STICKY restart); let the user resume it.
+            String type = error.getClass().getSimpleName();
+            Log.e(TAG, "FOREGROUND_START_FAILED " + type);
+            DiagnosticHistory.record(this, "FOREGROUND_START_FAILED " + type);
+            try { notifyStopped("Tap to resume listening"); } catch (RuntimeException ignored) { }
+            stopSelf();
+            return START_NOT_STICKY;
+        }
         getSystemService(NotificationManager.class).cancel(ERROR_NOTIFICATION_ID);
         if (!historyStarted) {
             historyStarted = true;
@@ -194,20 +209,30 @@ public class WakeService extends Service {
                     return;
                 }
             }
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            manager.createNotificationChannel(new NotificationChannel("wake_errors", "Listener errors",
-                    NotificationManager.IMPORTANCE_DEFAULT));
-            try {
-                manager.notify(ERROR_NOTIFICATION_ID, new Notification.Builder(this, "wake_errors")
-                        .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-                        .setContentTitle("Spotify Wake Probe stopped")
-                        .setContentText("Open app to restart listening")
-                        .setContentIntent(openApp())
-                        .setAutoCancel(true)
-                        .setVisibility(Notification.VISIBILITY_SECRET)
-                        .build());
-            } finally { stopSelf(); }
+            try { notifyStopped("Open app to restart listening"); } finally { stopSelf(); }
         });
+    }
+
+    private void notifyStopped(String message) {
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        manager.createNotificationChannel(new NotificationChannel("wake_errors", "Listener errors",
+                NotificationManager.IMPORTANCE_DEFAULT));
+        manager.notify(ERROR_NOTIFICATION_ID, new Notification.Builder(this, "wake_errors")
+                .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                .setContentTitle("Spotify Wake Probe stopped")
+                .setContentText(message)
+                .setContentIntent(openApp())
+                .setAutoCancel(true)
+                .setVisibility(Notification.VISIBILITY_SECRET)
+                .build());
+    }
+
+    /** True when a recognizer other than this app's own placeholder service is installed. */
+    static boolean systemRecognitionAvailable(Context context) {
+        for (ResolveInfo info : context.getPackageManager().queryIntentServices(
+                new Intent(RecognitionService.SERVICE_INTERFACE), PackageManager.ResolveInfoFlags.of(0)))
+            if (!context.getPackageName().equals(info.serviceInfo.packageName)) return true;
+        return false;
     }
 
     private void suspendRecognition() {
@@ -217,6 +242,7 @@ public class WakeService extends Service {
         if (speech != null) { speech.cancel(); speech.shutdown(); speech = null; }
         if (recognizer != null) { recognizer.close(); recognizer = null; }
         if (deviceTimeout != null) { handler.removeCallbacks(deviceTimeout); deviceTimeout = null; }
+        if (voskCommandTimeout != null) { handler.removeCallbacks(voskCommandTimeout); voskCommandTimeout = null; }
         if (deviceCommand != null) { deviceCommand.cancel(); deviceCommand.destroy(); deviceCommand = null; }
     }
 
@@ -266,7 +292,7 @@ public class WakeService extends Service {
         lastCommandHypothesis = "";
         partialCandidate = "";
         int current = generation;
-        if (forCommand && SpeechRecognizer.isRecognitionAvailable(this)) {
+        if (forCommand && systemRecognitionAvailable(this)) {
             startDeviceCommand(current);
             return;
         }
@@ -281,7 +307,7 @@ public class WakeService extends Service {
                     Log.i(TAG, "COMMAND_TIMEOUT");
                     VoiceCommand fallback = VoiceCommand.parse(lastCommandHypothesis);
                     if (fallback != null && fallback.acceptsPartial()) {
-                        try { executeCommand(fallback); } catch (IOException error) { fail(error); }
+                        try { executeCommand(fallback); } catch (IOException | RuntimeException error) { fail(error); }
                     } else {
                         recognitionFailed("I didn't catch that. Say Hey Sally to try again.");
                     }
@@ -302,6 +328,15 @@ public class WakeService extends Service {
         recognizer = new Recognizer(model, 16000f);
         speech = new SpeechService(recognizer, 16000f);
         speech.startListening(listener, 20000);
+        // Vosk's recognizer thread can die or stall without calling back; this backstop
+        // fires only if its own 20 s timeout never arrives.
+        voskCommandTimeout = () -> {
+            voskCommandTimeout = null;
+            if (current != generation || !awaitingCommand) return;
+            DiagnosticHistory.record(this, "COMMAND_WATCHDOG VOSK");
+            fail(new IllegalStateException("Vosk command window did not finish"));
+        };
+        handler.postDelayed(voskCommandTimeout, 25000);
         commandReadyBeep();
         update("Heard Hey Sally; say a command");
         Log.i(TAG, "COMMAND_READY");
@@ -378,7 +413,7 @@ public class WakeService extends Service {
                         DiagnosticHistory.record(WakeService.this, "COMMAND_UNRECOGNIZED");
                         recognitionFailed("I didn't understand that command. Say Hey Sally to try again.");
                     }
-                } catch (IOException failed) { fail(failed); }
+                } catch (IOException | RuntimeException failed) { fail(failed); }
             }
             @Override public void onPartialResults(Bundle partialResults) {
                 if (current != generation) return;
@@ -415,7 +450,7 @@ public class WakeService extends Service {
                 if (fallback != null && fallback.acceptsPartial())
                     executeCommand(fallback);
                 else recognitionFailed("I didn't catch that. Say Hey Sally to try again.");
-            } catch (IOException failed) { fail(failed); }
+            } catch (IOException | RuntimeException failed) { fail(failed); }
         };
         handler.postDelayed(deviceTimeout, 20000);
         update("Heard Hey Sally; say a command");

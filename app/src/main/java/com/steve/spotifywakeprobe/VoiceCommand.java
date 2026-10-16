@@ -50,8 +50,9 @@ final class VoiceCommand {
             case "play previous song": case "play previous track": return new VoiceCommand(Kind.PREVIOUS, "", "");
             default: break;
         }
-        if (!words.startsWith("play ")) return null;
-        String query = words.substring(5).trim();
+        String request = words.replaceFirst("^please,? ", "");
+        if (!request.startsWith("play ")) return null;
+        String query = request.substring(5).trim();
         if (query.startsWith("the song ")) query = query.substring(4);
         String type = "auto";
         if (query.startsWith("artist ")) { type = "artist"; query = query.substring(7).trim(); }
@@ -61,7 +62,9 @@ final class VoiceCommand {
         if ("auto".equals(type)) {
             VoiceCommand special = special(query);
             if (special != null) return special;
-            String numeric = query.replaceAll("[.!?,]+$", "").trim().replaceFirst(" please$", "").trim();
+            // Strip politeness before punctuation so "two, please" still selects a number.
+            String numeric = query.replaceFirst("[,.!?]*\\s*\\bplease[.!?]*$", "")
+                    .replaceAll("[.!?,]+$", "").trim();
             Integer number = spokenNumber(numeric.startsWith("number ") ? numeric.substring(7) : numeric);
             if (number != null) return new VoiceCommand(Kind.PLAY_NUMBER, number.toString(), "", numeric);
         }
