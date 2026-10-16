@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
@@ -18,12 +19,14 @@ import android.util.Base64;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -45,8 +48,14 @@ final class SpotifyOAuth {
 
     static void authorize(Activity activity, String clientId, Consumer<String> report) {
         new Thread(() -> {
-            try (ServerSocket server = new ServerSocket(8765, 1, InetAddress.getByName("127.0.0.1"))) {
-                server.setSoTimeout(120000);
+            ServerSocket server;
+            try {
+                server = new ServerSocket(8765, 4, InetAddress.getByName("127.0.0.1"));
+            } catch (IOException error) {
+                post(report, "Spotify authorization couldn't start because another app is using its local port. Close other apps and retry.");
+                return;
+            }
+            try (server) {
                 String verifier = random(48);
                 String state = random(24);
                 String challenge = Base64.encodeToString(MessageDigest.getInstance("SHA-256")
@@ -61,35 +70,71 @@ final class SpotifyOAuth {
                         .appendQueryParameter("code_challenge_method", "S256")
                         .appendQueryParameter("code_challenge", challenge).build();
                 activity.runOnUiThread(() -> activity.startActivity(new Intent(Intent.ACTION_VIEW, auth)));
-                try (Socket socket = server.accept()) {
-                    socket.setSoTimeout(5000);
-                    String request = new BufferedReader(new InputStreamReader(socket.getInputStream(),
-                            StandardCharsets.US_ASCII)).readLine();
-                    if (request == null || !request.startsWith("GET /callback?"))
-                        throw new CommandFailure.SetupException(CommandFailure.SetupReason.CALLBACK);
-                    Uri callback = Uri.parse("http://127.0.0.1:8765" + request.split(" ")[1]);
-                    if (!state.equals(callback.getQueryParameter("state")))
-                        throw new CommandFailure.SetupException(CommandFailure.SetupReason.STATE_MISMATCH);
-                    String code = callback.getQueryParameter("code");
-                    String message = code == null ? "Spotify authorization was declined" :
-                            "Spotify authorization received. Return to the app.";
-                    byte[] html = ("<html><body>" + message + "</body></html>")
-                            .getBytes(StandardCharsets.UTF_8);
-                    socket.getOutputStream().write(("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n" +
-                            "Content-Length: " + html.length + "\r\nConnection: close\r\n\r\n")
-                            .getBytes(StandardCharsets.US_ASCII));
-                    socket.getOutputStream().write(html);
-                    if (code == null) throw new CommandFailure.SetupException(CommandFailure.SetupReason.DECLINED);
-                    JSONObject token = tokenRequest("grant_type=authorization_code&code=" + enc(code) +
-                            "&redirect_uri=" + enc(REDIRECT) + "&client_id=" + enc(clientId) +
-                            "&code_verifier=" + enc(verifier));
-                    save(activity, token);
-                    post(report, "Spotify search and private playlists authorized");
-                }
+                String code = awaitCode(server, state, 120000);
+                JSONObject token = tokenRequest("grant_type=authorization_code&code=" + enc(code) +
+                        "&redirect_uri=" + enc(REDIRECT) + "&client_id=" + enc(clientId) +
+                        "&code_verifier=" + enc(verifier));
+                save(activity, token);
+                post(report, "Spotify search and private playlists authorized");
             } catch (Exception error) {
                 post(report, "Spotify authorization failed: " + CommandFailure.setupDetail(error));
             }
         }, "SpotifyOAuth").start();
+    }
+
+    /**
+     * Waits for the browser's callback until the deadline. Browser preconnects and other stray
+     * local connections are answered and skipped rather than ending the setup attempt.
+     */
+    static String awaitCode(ServerSocket server, String state, long timeoutMs) throws IOException {
+        long deadline = SystemClock.elapsedRealtime() + timeoutMs;
+        boolean mismatch = false;
+        while (true) {
+            long left = deadline - SystemClock.elapsedRealtime();
+            if (left <= 0) {
+                if (mismatch) throw new CommandFailure.SetupException(CommandFailure.SetupReason.STATE_MISMATCH);
+                throw new SocketTimeoutException("authorization callback");
+            }
+            server.setSoTimeout((int) left);
+            try (Socket socket = server.accept()) {
+                socket.setSoTimeout(5000);
+                String request;
+                try {
+                    request = new BufferedReader(new InputStreamReader(socket.getInputStream(),
+                            StandardCharsets.US_ASCII)).readLine();
+                } catch (IOException silent) {
+                    continue;
+                }
+                if (request == null || !request.startsWith("GET /callback?")) {
+                    respond(socket, "404 Not Found", "Not found");
+                    continue;
+                }
+                Uri callback = Uri.parse("http://127.0.0.1:8765" + request.split(" ")[1]);
+                if (!state.equals(callback.getQueryParameter("state"))) {
+                    mismatch = true;
+                    respond(socket, "400 Bad Request", "This authorization link is out of date. Return to the app and try again.");
+                    continue;
+                }
+                String code = callback.getQueryParameter("code");
+                respond(socket, "200 OK", code == null ? "Spotify authorization was declined" :
+                        "Spotify authorization received. Return to the app.");
+                if (code == null) throw new CommandFailure.SetupException(CommandFailure.SetupReason.DECLINED);
+                return code;
+            }
+        }
+    }
+
+    private static void respond(Socket socket, String status, String message) {
+        byte[] html = ("<html><body>" + message + "</body></html>").getBytes(StandardCharsets.UTF_8);
+        try {
+            OutputStream out = socket.getOutputStream();
+            out.write(("HTTP/1.1 " + status + "\r\nContent-Type: text/html; charset=utf-8\r\n" +
+                    "Content-Length: " + html.length + "\r\nConnection: close\r\n\r\n")
+                    .getBytes(StandardCharsets.US_ASCII));
+            out.write(html);
+        } catch (IOException ignored) {
+            // The browser closed early; the callback result is already known.
+        }
     }
 
     static synchronized String accessToken(Context context, String clientId) throws Exception {

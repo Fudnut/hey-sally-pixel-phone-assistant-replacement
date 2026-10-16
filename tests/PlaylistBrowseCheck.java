@@ -40,6 +40,10 @@ public final class PlaylistBrowseCheck {
             if (CommandFailure.code(report) != reasons[i] || report.contains("private"))
                 throw new AssertionError("Failure reports must contain only an allowlisted reason");
         }
+        java.util.Set<String> spoken = new java.util.HashSet<>();
+        for (CommandFailure.Reason reason : CommandFailure.Reason.values())
+            if (!spoken.add(CommandFailure.spoken(reason)))
+                throw new AssertionError("Each failure reason needs its own spoken sentence: " + reason);
         if (CommandFailure.code("Spotify failure: AUTH private title") != CommandFailure.Reason.REMOTE
                 || CommandFailure.code("private unstructured error") != CommandFailure.Reason.REMOTE
                 || CommandFailure.code(null) != CommandFailure.Reason.REMOTE)
@@ -84,6 +88,8 @@ public final class PlaylistBrowseCheck {
         command("List my playlists.", "LIST_PLAYLISTS", "");
         command("please list my playlists", "LIST_PLAYLISTS", "");
         command("list my play-list please", "LIST_PLAYLISTS", "");
+        command("list my playlists\u2026", "LIST_PLAYLISTS", "");
+        command("list my playlists\u2014please", "LIST_PLAYLISTS", "");
         if (VoiceCommand.parse("don't list my playlists") != null
                 || VoiceCommand.parse("list my playlist named example") != null)
             throw new AssertionError("Listing must still match the whole request");

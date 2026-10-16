@@ -60,6 +60,17 @@ final class CommandFailure {
 
     static String report(Reason reason) { return PREFIX + reason; }
 
+    /** One short spoken sentence per failure reason. */
+    static String spoken(Reason reason) {
+        switch (reason) {
+            case AUTH: return "Spotify needs authorizing again. Open the app to set it up.";
+            case TIMEOUT: return "Spotify took too long to respond. Try again.";
+            case NETWORK: return "I couldn't reach Spotify. Check your connection.";
+            case NO_MATCH: return "I couldn't find that on Spotify.";
+            default: return "I couldn't do that. Check Spotify and try again.";
+        }
+    }
+
     static Reason code(String report) {
         if (report == null || !report.startsWith(PREFIX)) return Reason.REMOTE;
         try { return Reason.valueOf(report.substring(PREFIX.length())); }

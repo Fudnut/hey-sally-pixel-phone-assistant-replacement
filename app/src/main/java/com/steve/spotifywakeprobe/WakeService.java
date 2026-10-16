@@ -623,7 +623,7 @@ public class WakeService extends Service {
         java.util.function.Consumer<String> report = message -> handler.post(() -> {
             if (destroyed || request != commandSequence) return;
             if (!commandStatus(commandLabel, message) && beginReply(request, commandLabel, true))
-                speakReply(request, "I couldn't do that. Check Spotify and its authorization in the app.", false);
+                speakReply(request, CommandFailure.spoken(CommandFailure.code(message)), false);
         });
         cancelOrdinaryPlayback = selected != null
                 ? SpotifyController.playPlaylist(this, selected.uri, report)
@@ -665,7 +665,12 @@ public class WakeService extends Service {
         replyTimeout = () -> {
             if (!isReplying(request)) return;
             recordReplyEvent("REPLY_TIMEOUT");
-            finishReply(request, false);
+            if (spokenReply == null && !specialPlaybackDispatched) {
+                // Nothing spoken yet: abandon the stalled lookup and say why instead of going silent.
+                if (playlistFetch != null) { playlistFetch.interrupt(); playlistFetch = null; }
+                if (cancelSpecialPlayback != null) { cancelSpecialPlayback.run(); cancelSpecialPlayback = null; }
+                speakReply(request, CommandFailure.spoken(CommandFailure.Reason.TIMEOUT), false);
+            } else finishReply(request, false);
         };
         handler.postDelayed(replyTimeout, delay);
     }

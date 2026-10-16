@@ -27,8 +27,11 @@ final class VoiceCommand {
 
     static VoiceCommand parse(String spoken) {
         if (spoken == null) return null;
-        String words = spoken.toLowerCase(Locale.ROOT).trim().replaceAll("\\s+", " ");
-        String listing = words.replaceAll("\\p{Punct}", " ").trim().replaceAll("\\s+", " ")
+        // Recognizers may return typographic punctuation; fold it to ASCII before matching.
+        String words = spoken.toLowerCase(Locale.ROOT).replace("\u2026", "...")
+                .replaceAll("[\u2013\u2014]", " ").replaceAll("[\u2018\u2019]", "'")
+                .replaceAll("[\u201C\u201D]", "\"").trim().replaceAll("\\s+", " ");
+        String listing = words.replaceAll("[\\p{Punct}\\p{P}]", " ").trim().replaceAll("\\s+", " ")
                 .replaceAll("\\bplay lists?\\b", "playlists");
         if (listing.matches("(?:please )?list (?:my )?playlists?(?: please)?")) {
             boolean exact = words.equals("list playlists") || words.equals("list my playlists");
