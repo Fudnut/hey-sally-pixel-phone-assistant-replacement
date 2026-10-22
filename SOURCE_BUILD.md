@@ -7,7 +7,7 @@ Requirements: Git, PowerShell, Python 3 for the controller check, JDK 17 or a ne
 1. Extract the source ZIP, or clone the public repository and check out the source commit recorded in SOURCE_PROVENANCE.json in the release source ZIP.
 2. Run `./fetch-spotify-sdk.ps1` and `./fetch-model.ps1`. They download the independent SDK/model and verify pinned SHA-256 values. The fetched inputs remain outside Git.
 3. Set `ANDROID_HOME` to your Android SDK. Gradle obtains the pinned Java/native runtime artifacts from Maven Central/Google; the first build needs network access.
-4. Run `./tests/check-playlists.ps1` and `python -X utf8 ./tests/check-controller.py`.
+4. Run `./tests/check-playlists.ps1`, `python -X utf8 ./tests/check-controller.py`, and `python -X utf8 ./tests/check-call-interruption.py`. The call check runs the real listener service with simulated Android boundaries; it does not place calls or verify Bluetooth audio.
 5. Run `./gradlew.bat :app:assembleRelease :app:lintRelease`. The unsigned APK is app/build/outputs/apk/release/app-release-unsigned.apk. `--offline` requires an already populated cache.
 6. To install your own build, align/sign it with your own key using Android's tools, or build `:app:assembleDebug` for standard debug signing. The maintainer's private signing key is not part of Corresponding Source. A differently signed build cannot update an existing public/private installation under the same package; preserve diagnostics and deliberately plan any migration.
 

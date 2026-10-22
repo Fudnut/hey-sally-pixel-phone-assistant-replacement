@@ -8,6 +8,8 @@ Wake recognition runs locally with Vosk. After the ready beep, Android's configu
 
 For complete installation steps, all command forms, bug reports, pull requests and the APK release checklist, read [TESTING_AND_DISTRIBUTION.md](TESTING_AND_DISTRIBUTION.md).
 
+Current source adds [incoming call interruption](docs/CALL_INTERRUPTION.md): grant Phone permission to pause media at ringing and suspend Sally until the call ends. Steve reported a successful incoming call test through his car system on 22 October 2026 using the updated Pixel 8 Pro installation. This fix is not included in the alpha.5 download below.
+
 ## What it is for
 
 - **Spotify only, for now.** Hey Sally controls the Spotify app. It does not control YouTube Music, Deezer, Apple Music or any other player, and has no search or playlist support for them. See the [roadmap](#roadmap-toward-an-assistant-replacement).

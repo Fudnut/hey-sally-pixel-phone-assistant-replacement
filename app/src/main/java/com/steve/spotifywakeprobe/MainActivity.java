@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
             String id = saveClientId();
             if (!id.isEmpty()) SpotifyOAuth.authorize(this, id, this::showMessage);
         });
-        addButton(layout, "Grant microphone and start probe", v -> startProbe());
+        addButton(layout, "Grant permissions and start probe", v -> startProbe());
         addButton(layout, "Open Default apps for assistant setup", v -> openDefaultApps());
         addButton(layout, "Refresh status", v -> refresh());
         addButton(layout, "Start fresh diagnostic trial", v -> {
@@ -190,6 +190,8 @@ public class MainActivity extends Activity {
         java.util.ArrayList<String> missing = new java.util.ArrayList<>();
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
             missing.add(Manifest.permission.RECORD_AUDIO);
+        if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+            missing.add(Manifest.permission.READ_PHONE_STATE);
         if (Build.VERSION.SDK_INT >= 33
                 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
             missing.add(Manifest.permission.POST_NOTIFICATIONS);
@@ -249,6 +251,9 @@ public class MainActivity extends Activity {
                 + "\nSystem command recognition: "
                 + SpeechRecognizer.isRecognitionAvailable(this)
                 + "\nCommand language: " + commandLanguage()
+                + (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
+                        ? "\nPhone call detection: enabled"
+                        : "\nAllow Phone permission using 'Grant permissions and start probe' to pause music as soon as a call rings. Call audio mode detection remains available.")
                 + (getSystemService(NotificationManager.class).areNotificationsEnabled()
                         ? "" : "\nNotifications disabled: enable them in Android app settings for listener status and failure alerts.")
                 + "\nLast wake: " + last + "\nLast command: " + lastCommand

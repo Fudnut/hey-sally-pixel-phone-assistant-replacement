@@ -87,6 +87,8 @@ public class WakeService extends Service {
     private Runnable cancelOrdinaryPlayback;
     private Runnable cancelSpecialPlayback;
     private boolean specialPlaybackDispatched;
+    private CallAudioMonitor calls;
+    private Runnable resumeAfterCall;
     private final Runnable wakeSummary = new Runnable() {
         @Override public void run() {
             if (destroyed) return;
@@ -124,6 +126,8 @@ public class WakeService extends Service {
             handler.postDelayed(heartbeat, HEARTBEAT_INTERVAL_MS);
             handler.postDelayed(wakeSummary, WAKE_SUMMARY_INTERVAL_MS);
         }
+        if (calls == null) calls = new CallAudioMonitor(this, this::callStateChanged);
+        calls.start();
         if (!loading && speech == null && model == null) {
             loading = true;
             StorageService.unpack(this, "model-en-us", "model", loaded -> {
@@ -216,10 +220,44 @@ public class WakeService extends Service {
         if (deviceCommand != null) { deviceCommand.cancel(); deviceCommand.destroy(); deviceCommand = null; }
     }
 
+    private void callStateChanged(boolean active) {
+        if (destroyed) return;
+        if (resumeAfterCall != null) { handler.removeCallbacks(resumeAfterCall); resumeAfterCall = null; }
+        if (active) {
+            commandSequence++;
+            if (retry != null) { handler.removeCallbacks(retry); retry = null; }
+            cancelOrdinaryPlayback();
+            stopReply();
+            playlists.clear();
+            suspendRecognition();
+            finishCommandFocus();
+            update("Phone call; Sally is paused");
+            DiagnosticHistory.record(this, "CALL_INTERRUPTION_START");
+        } else {
+            DiagnosticHistory.record(this, "CALL_INTERRUPTION_END");
+            listenFailures = 0;
+            // Let the call/Bluetooth route settle before reopening capture.
+            resumeAfterCall = () -> {
+                resumeAfterCall = null;
+                if (destroyed || model == null) return;
+                try { listen(false); } catch (IOException | RuntimeException error) { fail(error); }
+            };
+            handler.postDelayed(resumeAfterCall, 400);
+        }
+    }
+
     private void listen(boolean forCommand) throws IOException {
+        if (destroyed || (calls != null && calls.isCallActive())) return;
         suspendRecognition();
         if (forCommand) {
             takeAudioFocus();
+            if (!focusHeld) {
+                finishCommandFocus();
+                handler.postDelayed(() -> {
+                    try { listen(false); } catch (IOException | RuntimeException error) { fail(error); }
+                }, 400);
+                return;
+            }
             commandStartedAt = SystemClock.elapsedRealtime();
             speechStartedAt = 0;
         }
@@ -471,6 +509,7 @@ public class WakeService extends Service {
     }
 
     private void executeCommand(VoiceCommand command, List<String> playlistNames) throws IOException {
+        if (destroyed || (calls != null && calls.isCallActive())) return;
         cancelOrdinaryPlayback();
         command = command.forPlaylistContext(playlists.isActive(SystemClock.elapsedRealtime()));
         int request = ++commandSequence;
@@ -535,6 +574,8 @@ public class WakeService extends Service {
         }
         holdFocusForCommand = focusRequested;
         listen(false);
+        // listen() can discover a call and synchronously cancel this request.
+        if (destroyed || (calls != null && calls.isCallActive()) || request != commandSequence) return;
         if (holdFocusForCommand) {
             focusLimit = () -> {
                 if (request == commandSequence && holdFocusForCommand) {
@@ -566,6 +607,7 @@ public class WakeService extends Service {
     }
 
     private boolean beginReply(int request, String label, boolean feedback) {
+        if (destroyed || (calls != null && calls.isCallActive())) return false;
         suspendRecognition();
         replying = true;
         pagePending = false;
@@ -706,6 +748,7 @@ public class WakeService extends Service {
     }
 
     private void takeAudioFocus() {
+        if (destroyed || (calls != null && calls.isCallActive())) return;
         if (focusRequest == null) focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                 .setAudioAttributes(new AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_ASSISTANT)
@@ -739,6 +782,8 @@ public class WakeService extends Service {
 
     @Override public void onDestroy() {
         destroyed = true;
+        if (calls != null) { calls.close(); calls = null; }
+        if (resumeAfterCall != null) handler.removeCallbacks(resumeAfterCall);
         handler.removeCallbacks(heartbeat);
         handler.removeCallbacks(wakeSummary);
         DiagnosticHistory.flushWakeResults(this);
