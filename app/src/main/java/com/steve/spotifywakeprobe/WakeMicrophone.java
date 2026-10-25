@@ -25,6 +25,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Arrays;
+import java.util.function.Consumer;
+import org.vosk.Recognizer;
 
 /** Wake-only capture with explicit Android input privacy; no audio is saved. */
 final class WakeMicrophone implements AutoCloseable {
@@ -35,6 +38,16 @@ final class WakeMicrophone implements AutoCloseable {
     private final boolean debugCapture;
     private final boolean abProbe;
     private final AudioRecord recorder;
+    private final boolean requireBluetooth;
+    private final Consumer<Boolean> inputChanged;
+    private final Recognizer commandDecoder;
+    private final boolean initialCommand;
+    private final Object phaseLock = new Object();
+    private RecognitionListener phaseListener;
+    private Runnable phaseReady;
+    private boolean commandPhase, phaseReadySent;
+    private volatile long phaseGeneration;
+    private Runnable commandDeadline;
     private final Handler main = new Handler(Looper.getMainLooper());
     private volatile boolean closed;
     private Thread worker;
@@ -50,7 +63,15 @@ final class WakeMicrophone implements AutoCloseable {
     };
 
     WakeMicrophone(Context context, Model model) throws IOException {
+        this(context, model, false, false, null);
+    }
+
+    WakeMicrophone(Context context, Model model, boolean requireBluetooth,
+            boolean forCommand, Consumer<Boolean> inputChanged) throws IOException {
         this.context = context.getApplicationContext();
+        this.requireBluetooth = requireBluetooth;
+        this.initialCommand = forCommand;
+        this.inputChanged = inputChanged;
         debugCapture = (this.context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
             throw new SecurityException("Microphone permission required");
@@ -60,7 +81,7 @@ final class WakeMicrophone implements AutoCloseable {
         // A/B experiment only: files/ab_source in a debuggable build selects the capture source.
         String abSource = debugCapture ? readAbSource(this.context) : null;
         abProbe = abSource != null;
-        int source = "communication".equals(abSource)
+        int source = requireBluetooth || "communication".equals(abSource)
                 ? MediaRecorder.AudioSource.VOICE_COMMUNICATION : MediaRecorder.AudioSource.VOICE_RECOGNITION;
         recorder = new AudioRecord.Builder().setContext(context)
                 .setAudioSource(source)
@@ -68,12 +89,16 @@ final class WakeMicrophone implements AutoCloseable {
                 .setAudioFormat(new AudioFormat.Builder().setSampleRate(SAMPLE_RATE)
                         .setChannelMask(AudioFormat.CHANNEL_IN_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
                 .setBufferSizeInBytes(Math.max(minimum, READ_SAMPLES * 2)).build();
+        WakeDetector pendingDetector = null;
         try {
             if (recorder.getState() != AudioRecord.STATE_INITIALIZED)
                 throw new IOException("Wake microphone initialization failed");
             recorder.registerAudioRecordingCallback(context.getMainExecutor(), recordingChanges);
-            detector = VoskWakeDecoder.create(model);
+            pendingDetector = VoskWakeDecoder.create(model);
+            commandDecoder = requireBluetooth || forCommand ? new Recognizer(model, SAMPLE_RATE) : null;
+            detector = pendingDetector;
         } catch (IOException | RuntimeException error) {
+            if (pendingDetector != null) pendingDetector.close();
             try { recorder.unregisterAudioRecordingCallback(recordingChanges); }
             finally { recorder.release(); }
             throw error;
@@ -82,19 +107,14 @@ final class WakeMicrophone implements AutoCloseable {
 
     void start(RecognitionListener listener, Runnable ready) {
         if (closed || worker != null) throw new IllegalStateException("Wake microphone already used");
+        resume(listener, ready, initialCommand);
         worker = new Thread(() -> {
             try {
                 recorder.startRecording();
                 if (recorder.getRecordingState() != AudioRecord.RECORDSTATE_RECORDING)
                     throw new IOException("Wake microphone did not start");
-                main.post(() -> {
-                    if (closed) return;
-                    reportCapture(recorder.getActiveRecordingConfiguration());
-                    DiagnosticHistory.record(context, "WAKE_CAPTURE_READY private=" + recorder.isPrivacySensitive()
-                            + (abProbe ? " ab=" + (recorder.getAudioSource() == MediaRecorder.AudioSource.VOICE_COMMUNICATION
-                                    ? "communication" : "recognition") + effects(recorder.getActiveRecordingConfiguration()) : ""));
-                    ready.run();
-                });
+                if (!requireBluetooth) queueReady();
+                boolean bluetoothReady = false;
                 short[] buffer = new short[READ_SAMPLES];
                 long resultSamples = 0, levelSamples = 0, levelSquares = 0;
                 int levelPeak = 0, levelZeros = 0, levelReports = 0;
@@ -107,6 +127,25 @@ final class WakeMicrophone implements AutoCloseable {
                     int count = recorder.read(buffer, 0, buffer.length, AudioRecord.READ_BLOCKING);
                     if (closed) break;
                     if (count < 0) throw new IOException("Wake microphone read failed");
+                    if (requireBluetooth) {
+                        var config = recorder.getActiveRecordingConfiguration();
+                        if (config != null && config.isClientSilenced())
+                            throw new IOException("Car microphone silenced");
+                        boolean bluetooth = AndroidCarAudioSession.isBluetooth(recorder.getRoutedDevice());
+                        if (!bluetooth || !bluetoothReady) {
+                            main.post(() -> { if (!closed && inputChanged != null) inputChanged.accept(bluetooth); });
+                        }
+                        if (!bluetooth) { Arrays.fill(buffer, (short) 0); continue; }
+                        if (!bluetoothReady) bluetoothReady = true;
+                    }
+                    RecognitionListener selected;
+                    long selectedPhase;
+                    boolean selectedCommand;
+                    synchronized (phaseLock) {
+                        selected = phaseListener; selectedPhase = phaseGeneration; selectedCommand = commandPhase;
+                    }
+                    if (selected == null) { Arrays.fill(buffer, (short) 0); continue; }
+                    queueReady();
                     if (count > 0) resultSamples += count;
                     if (abProbe) for (int i = 0; i < count; i++) {
                         int value = buffer[i];
@@ -114,7 +153,13 @@ final class WakeMicrophone implements AutoCloseable {
                         abPeak = Math.max(abPeak, Math.abs(value));
                         abSamples++;
                     }
-                    String words = count > 0 ? detector.accept(buffer, count) : null;
+                    String words = null;
+                    synchronized (phaseLock) {
+                        if (selectedPhase != phaseGeneration) { Arrays.fill(buffer, (short) 0); continue; }
+                        if (count > 0) words = !selectedCommand ? detector.accept(buffer, count)
+                                : commandDecoder.acceptWaveForm(buffer, count)
+                                    ? new JSONObject(commandDecoder.getResult()).optString("text") : null;
+                    }
                     if (abProbe && words != null) {
                         // Category and level only, never the recognized words.
                         String kind = words.isEmpty() ? "empty" : WakePhrase.matches(words) ? "wake" : "other";
@@ -146,19 +191,70 @@ final class WakeMicrophone implements AutoCloseable {
                         long audioMs = resultSamples * 1000 / SAMPLE_RATE;
                         resultSamples = 0;
                         main.post(() -> {
-                            if (closed) return;
+                            if (closed || selectedPhase != phaseGeneration) return;
                             resultAudioMs = audioMs;
-                            listener.onResult(result);
+                            selected.onResult(result);
                         });
                     }
+                    Arrays.fill(buffer, (short) 0);
                 }
             } catch (Exception error) {
-                main.post(() -> { if (!closed) listener.onError(error); });
+                main.post(() -> {
+                    if (closed) return;
+                    if (requireBluetooth && inputChanged != null) inputChanged.accept(false);
+                    RecognitionListener selected;
+                    synchronized (phaseLock) { selected = phaseListener; }
+                    if (!closed && selected != null) selected.onError(error);
+                });
             } finally {
                 try { recorder.stop(); } catch (IllegalStateException ignored) { }
             }
         }, "WakeMicrophone");
         worker.start();
+    }
+
+    /** Suspend decoding while retaining the physical car recorder and mode activity. */
+    void pause() {
+        synchronized (phaseLock) {
+            phaseGeneration++; phaseListener = null; phaseReady = null; phaseReadySent = false;
+            if (commandDeadline != null) { main.removeCallbacks(commandDeadline); commandDeadline = null; }
+        }
+    }
+
+    void resume(RecognitionListener listener, Runnable ready, boolean forCommand) {
+        if (closed) throw new IllegalStateException("Microphone closed");
+        synchronized (phaseLock) {
+            pause();
+            if (forCommand) {
+                if (commandDecoder == null) throw new IllegalStateException("Command decoder unavailable");
+                commandDecoder.reset();
+            }
+            phaseListener = listener; phaseReady = ready; commandPhase = forCommand;
+        }
+    }
+
+    private void queueReady() {
+        final long selectedPhase;
+        final Runnable ready;
+        final RecognitionListener listener;
+        final boolean command;
+        synchronized (phaseLock) {
+            if (closed || phaseListener == null || phaseReadySent) return;
+            phaseReadySent = true; selectedPhase = phaseGeneration;
+            ready = phaseReady; listener = phaseListener; command = commandPhase;
+        }
+        main.post(() -> {
+            if (closed || selectedPhase != phaseGeneration) return;
+            reportCapture(recorder.getActiveRecordingConfiguration());
+            DiagnosticHistory.record(context, "WAKE_CAPTURE_READY private=" + recorder.isPrivacySensitive()
+                    + (abProbe ? " ab=" + (recorder.getAudioSource() == MediaRecorder.AudioSource.VOICE_COMMUNICATION
+                            ? "communication" : "recognition") + effects(recorder.getActiveRecordingConfiguration()) : ""));
+            ready.run();
+            if (command && !closed && selectedPhase == phaseGeneration) {
+                commandDeadline = () -> { if (!closed && selectedPhase == phaseGeneration) listener.onTimeout(); };
+                main.postDelayed(commandDeadline, 20000);
+            }
+        });
     }
 
     private static String readAbSource(Context context) {
@@ -181,6 +277,7 @@ final class WakeMicrophone implements AutoCloseable {
 
     // Captured audio since recording began or the preceding finalized result.
     long resultAudioMs() { return resultAudioMs; }
+    boolean isStarted() { return worker != null; }
 
     private void reportCapture(AudioRecordingConfiguration config) {
         if (closed || config == null) return;
@@ -201,6 +298,7 @@ final class WakeMicrophone implements AutoCloseable {
     @Override public void close() {
         if (closed) return;
         closed = true;
+        if (commandDeadline != null) main.removeCallbacks(commandDeadline);
         recorder.unregisterAudioRecordingCallback(recordingChanges);
         // Stop unblocks reads; join before closing decoders or their shared model.
         try { recorder.stop(); } catch (IllegalStateException ignored) { }
@@ -210,8 +308,11 @@ final class WakeMicrophone implements AutoCloseable {
         }
         try { detector.close(); }
         finally {
-            recorder.release();
-            if (interrupted) Thread.currentThread().interrupt();
+            try { if (commandDecoder != null) commandDecoder.close(); }
+            finally {
+                recorder.release();
+                if (interrupted) Thread.currentThread().interrupt();
+            }
         }
     }
 }

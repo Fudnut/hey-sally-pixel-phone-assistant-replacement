@@ -36,6 +36,19 @@ public class CallInterruptionCheck {
         invoke(service, "executeCommand", new Class<?>[]{VoiceCommand.class}, VoiceCommand.parse("resume"));
     }
     public static void main(String[] args) throws Exception {
+        android.content.Context ownedContext = new android.content.Context();
+        boolean[] owned = {true};
+        java.util.ArrayList<Boolean> changes = new java.util.ArrayList<>();
+        CallAudioMonitor ownMonitor = new CallAudioMonitor(ownedContext, changes::add, () -> owned[0]);
+        ownMonitor.start(); ownedContext.audio.mode(AudioManager.MODE_IN_COMMUNICATION);
+        check(!ownMonitor.isCallActive() && ownedContext.audio.keys.isEmpty(),
+                "Sally's published communication lease must not look like an incoming call or pause music");
+        ownedContext.telecom.busy = true;
+        check(ownMonitor.isCallActive() && ownedContext.audio.keys.size() == 2,
+                "A real Telecom call must preempt even while Sally owns communication mode");
+        ownedContext.telecom.busy = false; ownMonitor.isCallActive(); owned[0] = false;
+        check(ownMonitor.isCallActive(), "Clearing the lease must expose foreign communication mode immediately");
+        ownMonitor.close();
         WakeService service = start(false, true);
         check(WakeMicrophone.opened == 1, "Idle service must listen normally");
         command(service);
@@ -119,6 +132,69 @@ public class CallInterruptionCheck {
         listen(service, true);
         check(SpeechRecognizer.starts == 0, "Denied audio focus must not start command recognition");
         service.onDestroy();
+        android.content.SharedPreferences.carInput = true;
+        service = start(false, true);
+        check(WakeMicrophone.lastCar && !WakeMicrophone.lastCommand && service.audio.keys.isEmpty(),
+                "Car wake must use owned capture without mistaking its own mode for a phone call");
+        int initialCarOpens=WakeMicrophone.opened;
+        listen(service, true);
+        check(WakeMicrophone.opened==initialCarOpens&&WakeMicrophone.closed==0,
+                "Wake-to-command handover must retain the active car recorder so Android keeps its mode owner active");
+        check(WakeMicrophone.lastCar && WakeMicrophone.lastCommand && SpeechRecognizer.starts == 0,
+                "Car commands must keep caller-owned capture and never open a provider/default microphone");
+        check(service.audio.focusRequests == 1 && service.audio.abandons == 0,
+                "Car command capture must retain temporary music interruption");
+        service.telecom.busy = true; service.broadcast(TelephonyManager.EXTRA_STATE_RINGING);
+        check(WakeMicrophone.opened == WakeMicrophone.closed && service.audio.keys.size() == 2,
+                "Real incoming calls must still close owned car capture and pause media");
+        service.onDestroy();
+        DiagnosticHistory.events.clear();
+        service = start(false, false);
+        check(WakeMicrophone.opened == 0 && DiagnosticHistory.events.stream().noneMatch(x->x.contains("NullPointerException")),
+                "Reentrant denied-permission cleanup must not dereference a removed car session");
+        service.onDestroy();
+        service = start(false, true); AndroidCarAudioSession.preserveForeignMode = true;
+        invoke(service, "closeCarAudio", new Class<?>[]{});
+        check(service.audio.keys.size() == 2 && WakeMicrophone.opened == WakeMicrophone.closed,
+                "Releasing the lease must reconcile foreign communication mode and suspend capture");
+        AndroidCarAudioSession.preserveForeignMode = false;
+        service.onDestroy();
+        service = start(false, true); listen(service,true);
+        Handler.asyncPosts=true;
+        service.audio.focus.listener.onAudioFocusChange(-2);
+        service.telecom.busy=true;service.broadcast(TelephonyManager.EXTRA_STATE_RINGING);
+        Handler.advance(0);
+        check(service.stopsSelf==0,"Focus loss before ringing must not queue a terminal stop that defeats hang-up recovery");
+        service.telecom.busy=false;service.broadcast(TelephonyManager.EXTRA_STATE_IDLE);Handler.advance(1000);
+        check(WakeMicrophone.opened==WakeMicrophone.closed+1,"Hang-up must recover car wake after focus-first interruption");
+        service.onDestroy();Handler.asyncPosts=false;
+
+        service=start(false,true);listen(service,true);WakeService dispatchService=service;
+        SpotifyController.duringDispatch=()->dispatchService.audio.focus.listener.onAudioFocusChange(-1);
+        command(service);SpotifyController.duringDispatch=null;
+        check(service.stopsSelf==0&&service.audio.keys.isEmpty()&&SpotifyController.dispatched==1
+                &&WakeMicrophone.opened==WakeMicrophone.closed+1&&service.audio.mode==3,
+                "Intentional ordinary playback handoff must not terminate Sally before the player-result callback");
+        service.onDestroy();
+
+        service=start(false,true);Handler.asyncPosts=true;
+        invoke(service,"fail",new Class<?>[]{Exception.class},new java.io.IOException("capture interrupted"));
+        service.telecom.busy=true;service.broadcast(TelephonyManager.EXTRA_STATE_RINGING);Handler.advance(0);
+        check(service.stopsSelf==0,"A real call must invalidate queued capture failures from the previous generation");
+        service.onDestroy();Handler.asyncPosts=false;
+
+        service=start(false,true);Handler.asyncPosts=true;
+        var carField=WakeService.class.getDeclaredField("carAudio");carField.setAccessible(true);
+        ((AndroidCarAudioSession)carField.get(service)).session.interrupt("ROUTE_LOST");
+        command(service);
+        check(SpotifyController.dispatched==0,"An already-closed car route must reject queued commands before error cleanup runs");
+        Handler.advance(0);service.onDestroy();Handler.asyncPosts=false;
+        service=start(false,true);listen(service,true);
+        WakeMicrophone.last.route.accept(false);
+        check(WakeMicrophone.opened==WakeMicrophone.closed,
+                "Physical route callbacks must remain valid after switching recognition generations");
+        service.onDestroy();
+        android.content.SharedPreferences.carInput = false;
         System.out.println("Call interruption: pause, cancellation, microphone suspension, recovery, dual-SIM and focus denial checks passed");
     }
 }

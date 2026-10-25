@@ -1,6 +1,24 @@
 # Public project handoff
 
-Updated 11 October 2026 (Australia/Sydney).
+Updated 22 October 2026 (Australia/Sydney).
+
+## Latest resume checkpoint
+
+For a new chat, start with `docs/NEXT_SESSION_HANDOVER.md`; it contains a ready-to-paste resume prompt. Steve is picking this work up later. No further implementation or device action was performed after the checkpoint.
+
+Read `docs/CHECKPOINT_2026-10-22.md` first. Steve's screen-off continuous-car NEXT trial passed, with music quiet while he spoke. He then chose **phone wake followed by car conversation (option 1)** so stereo can return between conversations. Continuous car mode has been stopped. Hybrid code has not been changed yet; the installed APK still runs continuous car capture if started with the saved car setting. The checkpoint records the current state, completed evidence, implementation hazards, tool paths and next checks. Driving operation must be voice-only.
+
+## Parked car audio checkpoint — 22 October 2026
+
+- Latest main-app trial: Bluetooth Hey Sally, PAUSE and NEXT worked after retaining one physical recorder across recognition phases; Steve confirmed the requested player actions. Continuous car capture routed music through the car's telephone/mono channel. Force-stopping Sally returned Android to A2DP and Steve confirmed normal stereo returned (correcting an accidentally selected negative answer). A subsequent single Speak-button press opened only the car's own menu; no Android voice request was observed and the Pixel remained on its home screen. Car-button activation is not established. A repeat continuous-car trial confirmed screen-off NEXT and quiet capture, but Steve chose option 1 afterward because continuous listening leaves music mono between commands. Sally has been stopped again. Hybrid-input code is not implemented. See the latest checkpoint and `docs/CAR_VOICE_TRIAL.md`.
+- The incoming-call Spotify interruption fix is committed/pushed as `1cb3af6`; Steve reported it worked. Current subsequent diagnostic work is local on `feature/car-audio-probe`.
+- The reviewed debug-only car microphone check is installed on the Pixel 8 Pro using its original signer, preserving Spotify preferences. In the parked 2009 Pajero, active Android policy and the diagnostic confirmed actual Bluetooth SCO input; Steve heard Sally through the car speakers and observed 1–13% input level while speaking.
+- In the original bounded diagnostic, Steve confirmed music returned while the microphone meter was still active. The car's incoming-call display appeared for the speech test and disappeared when music returned; the diagnostic places no calls. Short audio coexistence was observed; the later main-app fidelity trial above found telephone/mono music during continuous capture.
+- Timer, explicit Stop and controlled Bluetooth-loss cleanup passed. Bluetooth was restored/reconnected; audio mode returned to normal and the existing Sally listener was restored. Its normal wake path still uses the phone microphone until car integration is implemented.
+- Steve requires music to stay paused throughout an active conversation so he can speak normally. The original diagnostic returned focus after its phrase to test coexistence; future prompts, commands, expected replies, confirmation and SMS readout must share one quiet conversation session. The follow-up below adds audible evidence beyond the original focus logs.
+- Follow-up requested by Steve: revised the debug diagnostic to retain focus through both the phrase and reply capture. Focus/cleanup regressions, debug/release build/lint and independent review passed; same-signer private update preserved Spotify settings. Steve confirmed music quiet during Sally's speech and his entire turn, then automatic resumption. Device snapshots were PAUSED/PAUSED/PLAYING with active Bluetooth input during both phases. This verifies bounded sound behavior; basic main-app commands subsequently passed as recorded above. Names and expected conversational answers remain unverified.
+- Detailed aggregate results: `docs/CAR_AUDIO_CHECK.md`. Next implementation plans: `docs/superpowers/plans/2026-10-22-car-voice-integration.md`, `2026-10-22-contact-calling.md` and `2026-10-22-sms-reading.md`. Contact calls and SMS reading are not implemented. SMS selection is Messages-app SMS, with automatic announcement and explicit approval before body readout. Keep final voice confirmation for every ordinary call.
+- No actual phone call or SMS body was used for this diagnostic. A real call trial requires an agreed ordinary recipient. Never test by calling 000. Private device dumps, keys and data stay excluded from the public repository.
 
 ## Contact calling planning checkpoint - 11 October 2026
 

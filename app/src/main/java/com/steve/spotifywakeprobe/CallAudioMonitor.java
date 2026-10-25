@@ -18,12 +18,14 @@ import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 import android.view.KeyEvent;
 import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
 
 /** Call interruption only; never changes call routing, volume or explicitly resumes media. */
 final class CallAudioMonitor implements AutoCloseable {
     private final Context context;
     private final AudioManager audio;
     private final Consumer<Boolean> changed;
+    private final BooleanSupplier ownCommunicationMode;
     private final Handler main = new Handler(Looper.getMainLooper());
     private boolean started;
     private boolean receiverRegistered;
@@ -49,8 +51,13 @@ final class CallAudioMonitor implements AutoCloseable {
     };
 
     CallAudioMonitor(Context context, Consumer<Boolean> changed) {
+        this(context, changed, () -> false);
+    }
+
+    CallAudioMonitor(Context context, Consumer<Boolean> changed, BooleanSupplier ownCommunicationMode) {
         this.context = context;
         this.changed = changed;
+        this.ownCommunicationMode = ownCommunicationMode;
         audio = context.getSystemService(AudioManager.class);
     }
 
@@ -72,7 +79,8 @@ final class CallAudioMonitor implements AutoCloseable {
         if (!started) return false;
         int mode = audio.getMode();
         boolean callMode = mode == AudioManager.MODE_RINGTONE || mode == AudioManager.MODE_IN_CALL
-                || mode == AudioManager.MODE_IN_COMMUNICATION || mode == AudioManager.MODE_CALL_SCREENING;
+                || (mode == AudioManager.MODE_IN_COMMUNICATION && !ownCommunicationMode.getAsBoolean())
+                || mode == AudioManager.MODE_CALL_SCREENING;
         if (!hasPhonePermission()) phoneBusy = false;
         boolean next = phoneBusy || telecomBusy() || callMode;
         if (next != active) {

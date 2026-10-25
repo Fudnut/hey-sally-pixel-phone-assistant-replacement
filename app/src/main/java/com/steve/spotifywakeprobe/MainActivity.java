@@ -33,6 +33,7 @@ import android.widget.TextView;
 import android.widget.Spinner;
 import android.widget.ArrayAdapter;
 import android.widget.AdapterView;
+import android.widget.CheckBox;
 
 public class MainActivity extends Activity {
     private static final int PERMISSIONS = 1;
@@ -50,6 +51,14 @@ public class MainActivity extends Activity {
         layout.setPadding(32, 32, 32, 32);
         status = new TextView(this);
         layout.addView(status);
+        CheckBox carInput = new CheckBox(this);
+        carInput.setText("Use car microphone (tap Start to apply)");
+        carInput.setChecked(getSharedPreferences("probe", MODE_PRIVATE).getBoolean("carInput", false));
+        carInput.setOnCheckedChangeListener((button, checked) -> {
+            getSharedPreferences("probe", MODE_PRIVATE).edit().putBoolean("carInput", checked).apply();
+            showMessage("Microphone choice saved. Tap Grant permissions and start probe to apply.");
+        });
+        layout.addView(carInput);
         TextView languageLabel = new TextView(this);
         languageLabel.setText("Command language (takes effect on the next wake)");
         layout.addView(languageLabel);
@@ -251,6 +260,8 @@ public class MainActivity extends Activity {
                 + "\nSystem command recognition: "
                 + SpeechRecognizer.isRecognitionAvailable(this)
                 + "\nCommand language: " + commandLanguage()
+                + "\nMicrophone selection: " + (getSharedPreferences("probe", MODE_PRIVATE).getBoolean("carInput", false)
+                        ? "car Bluetooth; local English command recognition" : "phone")
                 + (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
                         ? "\nPhone call detection: enabled"
                         : "\nAllow Phone permission using 'Grant permissions and start probe' to pause music as soon as a call rings. Call audio mode detection remains available.")

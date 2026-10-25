@@ -29,7 +29,7 @@ public class Context {
  public SharedPreferences getSharedPreferences(String name,int mode){return new SharedPreferences();}
 }''',
     'android/content/SharedPreferences.java': '''package android.content; public class SharedPreferences {
- public String getString(String k,String d){return d;} public Editor edit(){return new Editor();}
+ public static boolean carInput;public boolean getBoolean(String k,boolean d){return k.equals("carInput")?carInput:d;}public String getString(String k,String d){return d;} public Editor edit(){return new Editor();}
  public static class Editor { public Editor putString(String k,String v){return this;} public void apply(){} }
 }''',
     'android/content/Intent.java': '''package android.content; import java.util.*; public class Intent {
@@ -42,7 +42,7 @@ public class Context {
     'android/content/BroadcastReceiver.java': 'package android.content; public abstract class BroadcastReceiver {public abstract void onReceive(Context c,Intent i);}',
     'android/app/Service.java': '''package android.app; import android.content.*; public class Service extends Context {
  public static final int START_STICKY=1,START_NOT_STICKY=2; public android.os.IBinder onBind(Intent i){return null;}
- public int onStartCommand(Intent i,int f,int n){return 1;} public void onDestroy(){} public void stopSelf(){}
+ public int stopsSelf;public int onStartCommand(Intent i,int f,int n){return 1;} public void onDestroy(){} public void stopSelf(){stopsSelf++;}
  public void startForeground(int id,Notification n,int type){}
 }''',
     'android/app/Notification.java': '''package android.app; public class Notification {public static final int VISIBILITY_SECRET=-1;
@@ -59,19 +59,19 @@ public class Context {
     'android/os/Looper.java': 'package android.os; public class Looper {public static Looper getMainLooper(){return new Looper();}}',
     'android/os/Handler.java': '''package android.os; import java.util.*; public class Handler {
  public static final Map<Runnable,Long> timers=new LinkedHashMap<>(); public static long now;
- public Handler(Looper l){} public boolean post(Runnable r){r.run();return true;}
+ public static boolean asyncPosts;public Handler(Looper l){} public boolean post(Runnable r){if(asyncPosts)timers.put(r,now);else r.run();return true;}
  public boolean postDelayed(Runnable r,long delay){timers.put(r,now+delay);return true;} public void removeCallbacks(Runnable r){timers.remove(r);}
  public static void advance(long ms){now+=ms;for(var e:new ArrayList<>(timers.entrySet()))if(e.getValue()<=now&&timers.remove(e.getKey())!=null)e.getKey().run();}
 }''',
     'android/os/SystemClock.java': 'package android.os; public class SystemClock {public static long elapsedRealtime(){return Handler.now;}}',
-    'android/media/AudioAttributes.java': '''package android.media; public class AudioAttributes {public static final int USAGE_MEDIA=1,USAGE_ASSISTANT=16,CONTENT_TYPE_SPEECH=1;
+    'android/media/AudioAttributes.java': '''package android.media; public class AudioAttributes {public static final int USAGE_MEDIA=1,USAGE_ASSISTANT=16,USAGE_VOICE_COMMUNICATION=2,CONTENT_TYPE_SPEECH=1;
  public static class Builder {public Builder setUsage(int i){return this;} public Builder setContentType(int i){return this;} public AudioAttributes build(){return new AudioAttributes();}}}''',
     'android/media/AudioFocusRequest.java': '''package android.media; public class AudioFocusRequest {public AudioManager.OnAudioFocusChangeListener listener;
  public static class Builder {AudioFocusRequest r=new AudioFocusRequest(); public Builder(int i){} public Builder setAudioAttributes(AudioAttributes a){return this;}
  public Builder setOnAudioFocusChangeListener(AudioManager.OnAudioFocusChangeListener l,android.os.Handler h){r.listener=l;return this;} public AudioFocusRequest build(){return r;}}}''',
     'android/media/AudioManager.java': '''package android.media; import java.util.*; import java.util.concurrent.Executor; import android.view.KeyEvent;
 public class AudioManager {
- public static final int AUDIOFOCUS_GAIN=1,AUDIOFOCUS_GAIN_TRANSIENT=2,AUDIOFOCUS_LOSS=-1,AUDIOFOCUS_REQUEST_GRANTED=1,STREAM_NOTIFICATION=5;
+ public static final int AUDIOFOCUS_GAIN=1,AUDIOFOCUS_GAIN_TRANSIENT=2,AUDIOFOCUS_LOSS=-1,AUDIOFOCUS_REQUEST_GRANTED=1,STREAM_NOTIFICATION=5,STREAM_VOICE_CALL=0;
  public static final int MODE_NORMAL=0,MODE_RINGTONE=1,MODE_IN_CALL=2,MODE_IN_COMMUNICATION=3,MODE_CALL_SCREENING=4;
  public interface OnAudioFocusChangeListener {void onAudioFocusChange(int change);} public interface OnModeChangedListener {void onModeChanged(int mode);}
  public int mode,focusResult=1,focusRequests,abandons; public AudioFocusRequest focus; public OnModeChangedListener listener;
@@ -106,12 +106,15 @@ public class AudioManager {
     'org/vosk/android/RecognitionListener.java': 'package org.vosk.android;public interface RecognitionListener {void onPartialResult(String s);void onResult(String s);void onFinalResult(String s);void onError(Exception e);void onTimeout();}',
     'org/vosk/android/SpeechService.java': 'package org.vosk.android;public class SpeechService {public SpeechService(org.vosk.Recognizer r,float f){}public void startListening(RecognitionListener l,int t){}public void cancel(){}public void shutdown(){}}',
     'org/vosk/android/StorageService.java': 'package org.vosk.android;public class StorageService {public static void unpack(android.content.Context c,String a,String b,java.util.function.Consumer<org.vosk.Model> ok,java.util.function.Consumer<Exception> error){ok.accept(new org.vosk.Model());}}',
-    'com/steve/spotifywakeprobe/WakeMicrophone.java': '''package com.steve.spotifywakeprobe;public class WakeMicrophone {public static int opened,closed;
- public WakeMicrophone(android.content.Context c,org.vosk.Model m){opened++;}public void start(org.vosk.android.RecognitionListener l,Runnable ready){ready.run();}public void close(){closed++;}public long resultAudioMs(){return 0;}}''',
+    'com/steve/spotifywakeprobe/WakeMicrophone.java': '''package com.steve.spotifywakeprobe;public class WakeMicrophone {public static int opened,closed;public static WakeMicrophone last;public static boolean lastCar,lastCommand;java.util.function.Consumer<Boolean> route;
+ public WakeMicrophone(android.content.Context c,org.vosk.Model m){this(c,m,false,false,null);}public WakeMicrophone(android.content.Context c,org.vosk.Model m,boolean car,boolean command,java.util.function.Consumer<Boolean> route){opened++;last=this;lastCar=car;lastCommand=command;this.route=route;}boolean started;public boolean isStarted(){return started;}public void start(org.vosk.android.RecognitionListener l,Runnable ready){started=true;if(route!=null)route.accept(true);ready.run();}public void pause(){}public void resume(org.vosk.android.RecognitionListener l,Runnable ready,boolean command){lastCommand=command;ready.run();}public void close(){closed++;}public long resultAudioMs(){return 0;}}''',
+    'com/steve/spotifywakeprobe/AndroidCarAudioSession.java': '''package com.steve.spotifywakeprobe;public class AndroidCarAudioSession implements AutoCloseable {public final CarAudioSession session;public static boolean preserveForeignMode;boolean own,closing;
+ public AndroidCarAudioSession(android.content.Context c,java.util.function.BooleanSupplier call,Runnable beforeClose,java.util.function.Consumer<String> error){session=new CarAudioSession(new CarAudioSession.Platform(){public boolean hasPermissions(){return c.checkSelfPermission("android.permission.READ_PHONE_STATE")==0;}public boolean hasActiveCall(){return call.getAsBoolean();}public boolean requestRoute(){own=true;c.audio.mode(3);return true;}public void stopCapture(){beforeClose.run();}public void releaseRoute(){c.audio.mode(preserveForeignMode?3:0);own=false;}public void schedule(Runnable r,long ms){new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(r,ms);}public void cancel(Runnable r){new android.os.Handler(android.os.Looper.getMainLooper()).removeCallbacks(r);}public void report(String s){if(!session.isActive()&&!closing)error.accept(s);}});}
+ public boolean ownsCommunicationMode(){return own;}public void close(){closing=true;session.stop();}}''',
     'com/steve/spotifywakeprobe/DiagnosticHistory.java': '''package com.steve.spotifywakeprobe;import android.content.Context;public class DiagnosticHistory {
- public static void clearLegacyStatus(Context c){}public static void resetWakeResults(){}public static void record(Context c,String s){}public static void flushWakeResults(Context c){}public static String recordWakeResult(Context c,String s,long n){return null;}}''',
+ public static final java.util.List<String> events=new java.util.ArrayList<>();public static void clearLegacyStatus(Context c){}public static void resetWakeResults(){}public static void record(Context c,String s){events.add(s);}public static void flushWakeResults(Context c){}public static String recordWakeResult(Context c,String s,long n){return null;}}''',
     'com/steve/spotifywakeprobe/SpotifyController.java': '''package com.steve.spotifywakeprobe;import android.content.Context;import java.util.*;import java.util.function.Consumer;public class SpotifyController {
- public static int dispatched,cancelled;public static Runnable execute(Context c,VoiceCommand v,List<String> n,Consumer<String> r){dispatched++;return ()->cancelled++;}
+ public static int dispatched,cancelled;public static Runnable duringDispatch;public static Runnable execute(Context c,VoiceCommand v,List<String> n,Consumer<String> r){dispatched++;if(duringDispatch!=null)duringDispatch.run();return ()->cancelled++;}
  public static Runnable playPlaylist(Context c,String u,Consumer<String> r){return execute(c,null,null,r);}
  public static Thread fetchPlaylists(Context c,Consumer<List<PlaylistBrowse.Entry>> r,Consumer<String> f){return new Thread();}}''',
     'com/steve/spotifywakeprobe/SpotifySpecialPlayback.java': 'package com.steve.spotifywakeprobe;import java.util.*;import java.util.function.Consumer;public class SpotifySpecialPlayback {public static Runnable start(android.content.Context c,VoiceCommand v,List<String> n,Runnable b,Consumer<String> r){return ()->{};}}',
@@ -125,7 +128,7 @@ for name, content in files.items():
     paths.append(str(path))
 sdk = Path(os.environ['ANDROID_HOME'])
 platform = max((sdk / 'platforms').glob('*/android.jar'), key=lambda p: p.parent.name)
-production = ['WakeService', 'VoiceCommand', 'PlaylistBrowse', 'WakePhrase', 'CommandLanguage', 'CommandFailure']
+production = ['WakeService', 'VoiceCommand', 'PlaylistBrowse', 'WakePhrase', 'CommandLanguage', 'CommandFailure', 'CarAudioSession']
 if (source / 'CallAudioMonitor.java').exists():
     production.append('CallAudioMonitor')
 classes = out / 'classes'
