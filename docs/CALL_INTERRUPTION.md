@@ -1,4 +1,4 @@
-# Incoming call interruption (unreleased source)
+# Incoming call interruption (since 0.2.1-alpha.6)
 
 The listener now observes phone state and Android call audio modes. On a ringing or active call it cancels pending Spotify operations, stops recognition and spoken replies, abandons assistant audio focus, and sends a media **pause** key to the active player. It does not change the car's audio route or volume. After calls end, wake listening returns; Sally does not explicitly resume Spotify. Say **Hey Sally**, wait for the beep, then **resume** if music remains paused.
 
