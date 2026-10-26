@@ -25,7 +25,7 @@ Optional checksum check on a computer:
 Get-FileHash ./Hey-Sally-0.2.1-alpha.7-arm64.apk -Algorithm SHA256
 ```
 
-Compare with `SHA256SUMS.txt` from the same release. The APK is signed with a dedicated public-release certificate. Future releases should use that same certificate.
+Compare with `SHA256SUMS.txt` from the same release. The APK is signed with a dedicated public-release certificate, new in alpha.7 (see [RELEASE_SIGNING.md](RELEASE_SIGNING.md)). If you installed alpha.6 or earlier, uninstall it before installing alpha.7; this clears Sally's settings and Spotify authorization. Future releases should use the alpha.7 certificate.
 
 **If you already have a private trial or self-built APK:** a different signing key under the same package prevents installation over it. Stop if Android reports a conflict. Do not uninstall merely to get past it: uninstalling loses Spotify settings, authorization and private diagnostics. Copy your diagnostic history and deliberately choose whether to migrate.
 
