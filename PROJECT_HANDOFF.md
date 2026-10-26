@@ -48,7 +48,7 @@ References: [TelecomManager](https://developer.android.com/reference/android/tel
 ## Current state
 
 - Repository: https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement ; branch `main`.
-- Limited-test release: 0.2.1-alpha.5, versionCode 7, ARM64, Android 14+, target API 37. Read README.md, INSTALL.md and TESTING_AND_DISTRIBUTION.md for current setup, commands, privacy and testing.
+- Limited-test release: 0.2.1-alpha.6, versionCode 8, ARM64, Android 14+, target API 37. Read README.md, INSTALL.md and TESTING_AND_DISTRIBUTION.md for current setup, commands, privacy and testing.
 - Licence: GPL-3.0-only with the limited independent-library permission in LINKING_EXCEPTION.md. Complete project source/build scripts accompany the APK; third-party licences and copyright attribution remain intact. SOURCE_BUILD.md and THIRD_PARTY_NOTICES.md describe source/input provenance.
 - Package `com.steve.spotifywakeprobe`, launcher label Spotify Wake Probe, exact wake Hey Sally, public certificate and existing signing inputs are fixed compatibility boundaries. Do not relabel, move/copy keys, expose credentials or rewrite Git history. Pixel updates are authorized only for the current in-place private wake test; preserve its signing identity and app data. Release maintenance does not authorize installation changes. Ponytail is off.
 

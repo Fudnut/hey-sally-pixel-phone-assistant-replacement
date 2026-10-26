@@ -8,7 +8,7 @@ Wake recognition runs locally with Vosk. After the ready beep, Android's configu
 
 For complete installation steps, all command forms, bug reports, pull requests and the APK release checklist, read [TESTING_AND_DISTRIBUTION.md](TESTING_AND_DISTRIBUTION.md).
 
-Current source adds [incoming call interruption](docs/CALL_INTERRUPTION.md): grant Phone permission to pause media at ringing and suspend Sally until the call ends. Steve reported a successful incoming call test through his car system on 22 October 2026 using the updated Pixel 8 Pro installation. This fix is not included in the alpha.5 download below.
+Alpha.6 adds [incoming call interruption](docs/CALL_INTERRUPTION.md): grant Phone permission to pause media at ringing and suspend Sally until the call ends. Steve reported a successful incoming call test through his car system on 22 October 2026 using the updated Pixel 8 Pro installation. The alpha.6 download below includes this fix.
 
 ## What it is for
 
@@ -18,7 +18,7 @@ Current source adds [incoming call interruption](docs/CALL_INTERRUPTION.md): gra
 
 ## Download the test APK
 
-[Download Hey Sally 0.2.1-alpha.5 for ARM64 Android](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.5/Hey-Sally-0.2.1-alpha.5-arm64.apk). Read [INSTALL.md](INSTALL.md) for phone installation, your own Spotify Developer setup, commands and bug reports. This is an experimental prerelease for Android 14+, not a Play Store release. No compilation is needed; Spotify registration/authorization is still required.
+[Download Hey Sally 0.2.1-alpha.6 for ARM64 Android](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.6/Hey-Sally-0.2.1-alpha.6-arm64.apk). Read [INSTALL.md](INSTALL.md) for phone installation, your own Spotify Developer setup, commands and bug reports. This is an experimental prerelease for Android 14+, not a Play Store release. No compilation is needed; Spotify registration/authorization is still required.
 
 The public APK has a separate signing identity from private trial/self-built APKs; do not uninstall an existing trial to resolve a signature conflict without saving its diagnostics and choosing a migration. See [RELEASE_SIGNING.md](RELEASE_SIGNING.md).
 
