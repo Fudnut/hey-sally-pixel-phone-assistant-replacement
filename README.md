@@ -8,7 +8,7 @@ Wake recognition runs locally with Vosk. In standard phone-input mode, Android's
 
 For complete installation steps, all command forms, bug reports, pull requests and the APK release checklist, read [TESTING_AND_DISTRIBUTION.md](TESTING_AND_DISTRIBUTION.md).
 
-Current source includes [incoming call interruption](docs/CALL_INTERRUPTION.md): grant Phone permission to pause media at ringing and suspend Sally until the call ends. Steve reported a successful incoming call test through his car system on 22 October 2026 using an updated Pixel 8 Pro installation. The public alpha.5 download below predates this fix.
+Alpha.6 adds [incoming call interruption](docs/CALL_INTERRUPTION.md): grant Phone permission to pause media at ringing and suspend Sally until the call ends. Steve reported a successful incoming call test through his car system on 22 October 2026 using the updated Pixel 8 Pro installation. The alpha.6 download below includes this fix.
 
 ## What it is for
 
@@ -18,9 +18,9 @@ Current source includes [incoming call interruption](docs/CALL_INTERRUPTION.md):
 
 ## Download the test APK
 
-[Download Hey Sally 0.2.1-alpha.5 for ARM64 Android](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.5/Hey-Sally-0.2.1-alpha.5-arm64.apk). Read [INSTALL.md](INSTALL.md) for phone installation, your own Spotify Developer setup, commands and bug reports. This is an experimental prerelease for Android 14+, not a Play Store release. No compilation is needed; Spotify registration/authorization is still required.
+[Download Hey Sally 0.2.1-alpha.6 for ARM64 Android](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.6/Hey-Sally-0.2.1-alpha.6-arm64.apk). Read [INSTALL.md](INSTALL.md) for phone installation, your own Spotify Developer setup, commands and bug reports. This is an experimental prerelease for Android 14+, not a Play Store release. No compilation is needed; Spotify registration/authorization is still required.
 
-The public APK has a separate signing identity from private trial/self-built APKs; do not uninstall an existing trial to resolve a signature conflict without saving its diagnostics and choosing a migration. See [RELEASE_SIGNING.md](RELEASE_SIGNING.md). The current local source contains incoming-call handling and the experimental continuous car-microphone mode described above; neither is in the alpha.5 APK.
+The public APK has a separate signing identity from private trial/self-built APKs; do not uninstall an existing trial to resolve a signature conflict without saving its diagnostics and choosing a migration. See [RELEASE_SIGNING.md](RELEASE_SIGNING.md). The experimental continuous car-microphone mode described above is only in this branch's source; it is not in the alpha.6 APK.
 
 ## Status and requirements
 

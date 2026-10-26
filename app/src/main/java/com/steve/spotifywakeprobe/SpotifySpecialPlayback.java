@@ -63,18 +63,28 @@ final class SpotifySpecialPlayback {
         main.postDelayed(timeout, 25000);
         ConnectionParams params = new ConnectionParams.Builder(client)
                 .setRedirectUri(SpotifyOAuth.REDIRECT).showAuthView(false).build();
-        SpotifyAppRemote.connect(context, params, new Connector.ConnectionListener() {
-            @Override public void onConnected(SpotifyAppRemote connected) {
-                if (finished) { SpotifyAppRemote.disconnect(connected); return; }
-                remote = connected;
-                remote.getContentApi().getRecommendedContentItems(ContentApi.ContentType.DEFAULT)
-                        .setResultCallback(items -> { scan(items); next(); })
-                        .setErrorCallback(error -> libraryOrUnavailable());
-            }
-            @Override public void onFailure(Throwable error) {
-                finish("I couldn't connect to Spotify. Check your connection and Spotify authorization in the app.");
-            }
-        });
+        try {
+            SpotifyAppRemote.connect(context, params, new Connector.ConnectionListener() {
+                @Override public void onConnected(SpotifyAppRemote connected) {
+                    if (finished) { SpotifyAppRemote.disconnect(connected); return; }
+                    remote = connected;
+                    try {
+                        remote.getContentApi().getRecommendedContentItems(ContentApi.ContentType.DEFAULT)
+                                .setResultCallback(items -> { scan(items); next(); })
+                                .setErrorCallback(error -> libraryOrUnavailable());
+                    } catch (RuntimeException error) { failed(error); }
+                }
+                @Override public void onFailure(Throwable error) {
+                    finish("I couldn't connect to Spotify. Check your connection and Spotify authorization in the app.");
+                }
+            });
+        } catch (RuntimeException error) { failed(error); }
+    }
+
+    /** The App Remote SDK can throw synchronously (missing app, bad state); never let it crash the service. */
+    private void failed(RuntimeException error) {
+        DiagnosticHistory.record(context, "SPECIAL_SDK_ERROR " + error.getClass().getSimpleName());
+        finish("Spotify couldn't start. Check Spotify and its authorization in the app.");
     }
 
     private void scan(ListItems page) {
@@ -105,14 +115,16 @@ final class SpotifySpecialPlayback {
         }
         Page page = pending.remove();
         pages++;
-        remote.getContentApi().getChildrenOfItem(page.item, 50, page.offset).setResultCallback(items -> {
-            if (finished) return;
-            scan(items);
-            int count = items.items == null ? 0 : items.items.length;
-            if (count > 0 && page.offset + count < items.total && pending.size() < MAX_PAGES)
-                pending.add(new Page(page.item, page.offset + count));
-            next();
-        }).setErrorCallback(error -> next());
+        try {
+            remote.getContentApi().getChildrenOfItem(page.item, 50, page.offset).setResultCallback(items -> {
+                if (finished) return;
+                scan(items);
+                int count = items.items == null ? 0 : items.items.length;
+                if (count > 0 && page.offset + count < items.total && pending.size() < MAX_PAGES)
+                    pending.add(new Page(page.item, page.offset + count));
+                next();
+            }).setErrorCallback(error -> next());
+        } catch (RuntimeException error) { failed(error); }
     }
 
     private void libraryOrUnavailable() {
@@ -142,13 +154,15 @@ final class SpotifySpecialPlayback {
         DiagnosticHistory.record(context, "SPECIAL_MATCH_OPTION rank=" + matches.rank);
         beforePlay.run();
         if (finished) return;
-        CallResult<Empty> play = matches.fromLibrary() ? remote.getPlayerApi().play(item.uri)
-                : remote.getContentApi().playContentItem(item);
-        play.setResultCallback(ignored -> {
-            if (finished) return;
-            SpotifyController.dispatchMediaPlay(context);
-            finish(null);
-        }).setErrorCallback(error -> finish("Spotify couldn't play that collection. Check it in Spotify, then try again."));
+        try {
+            CallResult<Empty> play = matches.fromLibrary() ? remote.getPlayerApi().play(item.uri)
+                    : remote.getContentApi().playContentItem(item);
+            play.setResultCallback(ignored -> {
+                if (finished) return;
+                SpotifyController.dispatchMediaPlay(context);
+                finish(null);
+            }).setErrorCallback(error -> finish("Spotify couldn't play that collection. Check it in Spotify, then try again."));
+        } catch (RuntimeException error) { failed(error); }
     }
 
     private void finish(String error) {

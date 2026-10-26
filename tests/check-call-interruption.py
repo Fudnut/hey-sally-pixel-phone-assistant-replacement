@@ -27,7 +27,16 @@ public class Context {
  public void unregisterReceiver(BroadcastReceiver r){receivers.remove(r);}
  public void broadcast(String state){for(var r:new ArrayList<>(receivers))r.onReceive(this,new Intent(android.telephony.TelephonyManager.ACTION_PHONE_STATE_CHANGED).putExtra(android.telephony.TelephonyManager.EXTRA_STATE,state));}
  public SharedPreferences getSharedPreferences(String name,int mode){return new SharedPreferences();}
+ public String getPackageName(){return "com.steve.spotifywakeprobe";}
+ public android.content.pm.PackageManager getPackageManager(){return new android.content.pm.PackageManager();}
 }''',
+    'android/content/pm/PackageManager.java': '''package android.content.pm; import java.util.*; public class PackageManager {
+ public static final int PERMISSION_GRANTED=0;
+ public static class ResolveInfoFlags {public static ResolveInfoFlags of(long f){return new ResolveInfoFlags();}}
+ public List<ResolveInfo> queryIntentServices(android.content.Intent i,ResolveInfoFlags f){ResolveInfo r=new ResolveInfo();r.serviceInfo=new ServiceInfo();r.serviceInfo.packageName="com.google.android.as";return List.of(r);}
+}''',
+    'android/content/pm/ResolveInfo.java': 'package android.content.pm; public class ResolveInfo {public ServiceInfo serviceInfo;}',
+    'android/content/pm/ServiceInfo.java': 'package android.content.pm; public class ServiceInfo {public static final int FOREGROUND_SERVICE_TYPE_MICROPHONE=128;public String packageName;}',
     'android/content/SharedPreferences.java': '''package android.content; public class SharedPreferences {
  public static boolean carInput;public boolean getBoolean(String k,boolean d){return k.equals("carInput")?carInput:d;}public String getString(String k,String d){return d;} public Editor edit(){return new Editor();}
  public static class Editor { public Editor putString(String k,String v){return this;} public void apply(){} }

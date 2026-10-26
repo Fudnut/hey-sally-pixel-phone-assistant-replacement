@@ -132,7 +132,7 @@ public class MainActivity extends Activity {
     private void checkLanguageSupport() {
         if (languageCheck != null) languageCheck.destroy();
         languageCheck = null;
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+        if (!WakeService.systemRecognitionAvailable(this)) {
             showMessage("System recognition unavailable; the offline fallback uses its US English model.");
             return;
         }
@@ -258,7 +258,7 @@ public class MainActivity extends Activity {
         status.setText((message.isEmpty() ? "" : message + "\n\n")
                 + "Wake phrase: Hey Sally\nDefault assistant: " + assistant
                 + "\nSystem command recognition: "
-                + SpeechRecognizer.isRecognitionAvailable(this)
+                + WakeService.systemRecognitionAvailable(this)
                 + "\nCommand language: " + commandLanguage()
                 + "\nMicrophone selection: " + (getSharedPreferences("probe", MODE_PRIVATE).getBoolean("carInput", false)
                         ? "car Bluetooth; local English command recognition" : "phone")

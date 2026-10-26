@@ -27,8 +27,11 @@ final class VoiceCommand {
 
     static VoiceCommand parse(String spoken) {
         if (spoken == null) return null;
-        String words = spoken.toLowerCase(Locale.ROOT).trim().replaceAll("\\s+", " ");
-        String listing = words.replaceAll("\\p{Punct}", " ").trim().replaceAll("\\s+", " ")
+        // Recognizers may return typographic punctuation; fold it to ASCII before matching.
+        String words = spoken.toLowerCase(Locale.ROOT).replace("\u2026", "...")
+                .replaceAll("[\u2013\u2014]", " ").replaceAll("[\u2018\u2019]", "'")
+                .replaceAll("[\u201C\u201D]", "\"").trim().replaceAll("\\s+", " ");
+        String listing = words.replaceAll("[\\p{Punct}\\p{P}]", " ").trim().replaceAll("\\s+", " ")
                 .replaceAll("\\bplay lists?\\b", "playlists");
         if (listing.matches("(?:please )?list (?:my )?playlists?(?: please)?")) {
             boolean exact = words.equals("list playlists") || words.equals("list my playlists");
@@ -50,8 +53,9 @@ final class VoiceCommand {
             case "play previous song": case "play previous track": return new VoiceCommand(Kind.PREVIOUS, "", "");
             default: break;
         }
-        if (!words.startsWith("play ")) return null;
-        String query = words.substring(5).trim();
+        String request = words.replaceFirst("^please,? ", "");
+        if (!request.startsWith("play ")) return null;
+        String query = request.substring(5).trim();
         if (query.startsWith("the song ")) query = query.substring(4);
         String type = "auto";
         if (query.startsWith("artist ")) { type = "artist"; query = query.substring(7).trim(); }
@@ -61,7 +65,9 @@ final class VoiceCommand {
         if ("auto".equals(type)) {
             VoiceCommand special = special(query);
             if (special != null) return special;
-            String numeric = query.replaceAll("[.!?,]+$", "").trim().replaceFirst(" please$", "").trim();
+            // Strip politeness before punctuation so "two, please" still selects a number.
+            String numeric = query.replaceFirst("[,.!?]*\\s*\\bplease[.!?]*$", "")
+                    .replaceAll("[.!?,]+$", "").trim();
             Integer number = spokenNumber(numeric.startsWith("number ") ? numeric.substring(7) : numeric);
             if (number != null) return new VoiceCommand(Kind.PLAY_NUMBER, number.toString(), "", numeric);
         }
