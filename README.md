@@ -8,17 +8,18 @@ Wake recognition runs locally with Vosk. After the ready beep, Android's configu
 
 For complete installation steps, all command forms, bug reports, pull requests and the APK release checklist, read [TESTING_AND_DISTRIBUTION.md](TESTING_AND_DISTRIBUTION.md).
 
-Alpha.6 adds [incoming call interruption](docs/CALL_INTERRUPTION.md): grant Phone permission to pause media at ringing and suspend Sally until the call ends. Steve reported a successful incoming call test through his car system on 22 October 2026 using the updated Pixel 8 Pro installation. The alpha.6 download below includes this fix.
+Alpha.6 adds [incoming call interruption](docs/CALL_INTERRUPTION.md): grant Phone permission to pause media at ringing and suspend Sally until the call ends. Steve reported a successful incoming call test through his car system on 22 October 2026 using the updated Pixel 8 Pro installation. The download below includes this fix.
 
 ## What it is for
 
 - **Spotify only, for now.** Hey Sally controls the Spotify app. It does not control YouTube Music, Deezer, Apple Music or any other player, and has no search or playlist support for them. See the [roadmap](#roadmap-toward-an-assistant-replacement).
 - **An Android phone connected over Bluetooth.** The intended setup is an Android phone paired to a car stereo, headset or Bluetooth speaker. You pair the phone with the car in Android as usual; the app has no pairing or Bluetooth logic of its own and does not start when a Bluetooth device connects. It listens with the phone's own microphone, so keep the phone in the cabin. Music and spoken replies play through the phone's normal media output, which is the Bluetooth device while it is connected. The app does not set up a car or headset microphone. Short tests with a Pixel 8 Pro have passed over Bluetooth in a car and with Bluetooth-connected devices at home. Other cars, speakers and headsets, and the ready beep on each route, are not validated.
+- **Optional place-based listening (new in alpha.7).** Tick **Only listen on Wi-Fi or with Bluetooth audio connected** and tap Start. Sally then listens only while the phone is on any Wi-Fi network or has any Bluetooth audio device connected (car, speaker, headphones), and closes the microphone otherwise, so Android's green mic dot goes off. It reads no network names or location. After Wi-Fi or Bluetooth drops, Sally waits 15 seconds before pausing, so leaving home in the car does not restart capture.
 - **Hands-free, including a locked phone.** Say the wake phrase, wait for the beep, then speak one command. See [what cannot be replicated](#what-cannot-be-replicated-and-why) for the limits.
 
 ## Download the test APK
 
-[Download Hey Sally 0.2.1-alpha.6 for ARM64 Android](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.6/Hey-Sally-0.2.1-alpha.6-arm64.apk). Read [INSTALL.md](INSTALL.md) for phone installation, your own Spotify Developer setup, commands and bug reports. This is an experimental prerelease for Android 14+, not a Play Store release. No compilation is needed; Spotify registration/authorization is still required.
+[Download Hey Sally 0.2.1-alpha.7 for ARM64 Android](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.7/Hey-Sally-0.2.1-alpha.7-arm64.apk). Read [INSTALL.md](INSTALL.md) for phone installation, your own Spotify Developer setup, commands and bug reports. This is an experimental prerelease for Android 14+, not a Play Store release. No compilation is needed; Spotify registration/authorization is still required.
 
 The public APK has a separate signing identity from private trial/self-built APKs; do not uninstall an existing trial to resolve a signature conflict without saving its diagnostics and choosing a migration. See [RELEASE_SIGNING.md](RELEASE_SIGNING.md).
 
