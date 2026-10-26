@@ -33,6 +33,7 @@ import android.widget.TextView;
 import android.widget.Spinner;
 import android.widget.ArrayAdapter;
 import android.widget.AdapterView;
+import android.widget.CheckBox;
 
 public class MainActivity extends Activity {
     private static final int PERMISSIONS = 1;
@@ -50,6 +51,14 @@ public class MainActivity extends Activity {
         layout.setPadding(32, 32, 32, 32);
         status = new TextView(this);
         layout.addView(status);
+        CheckBox placeGate = new CheckBox(this);
+        placeGate.setText("Only listen on Wi-Fi or with Bluetooth audio connected (tap Start to apply)");
+        placeGate.setChecked(getSharedPreferences("probe", MODE_PRIVATE).getBoolean("placeGate", false));
+        placeGate.setOnCheckedChangeListener((button, checked) -> {
+            getSharedPreferences("probe", MODE_PRIVATE).edit().putBoolean("placeGate", checked).apply();
+            showMessage("Listening places saved. Tap Grant permissions and start probe to apply.");
+        });
+        layout.addView(placeGate);
         TextView languageLabel = new TextView(this);
         languageLabel.setText("Command language (takes effect on the next wake)");
         layout.addView(languageLabel);
@@ -251,6 +260,8 @@ public class MainActivity extends Activity {
                 + "\nSystem command recognition: "
                 + WakeService.systemRecognitionAvailable(this)
                 + "\nCommand language: " + commandLanguage()
+                + "\nListening places: " + (getSharedPreferences("probe", MODE_PRIVATE).getBoolean("placeGate", false)
+                        ? "Wi-Fi or Bluetooth audio only" : "anywhere")
                 + (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
                         ? "\nPhone call detection: enabled"
                         : "\nAllow Phone permission using 'Grant permissions and start probe' to pause music as soon as a call rings. Call audio mode detection remains available.")

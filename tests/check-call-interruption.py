@@ -38,6 +38,7 @@ public class Context {
     'android/content/pm/ResolveInfo.java': 'package android.content.pm; public class ResolveInfo {public ServiceInfo serviceInfo;}',
     'android/content/pm/ServiceInfo.java': 'package android.content.pm; public class ServiceInfo {public static final int FOREGROUND_SERVICE_TYPE_MICROPHONE=128;public String packageName;}',
     'android/content/SharedPreferences.java': '''package android.content; public class SharedPreferences {
+ public static boolean placeGate;public boolean getBoolean(String k,boolean d){return k.equals("placeGate")?placeGate:d;}
  public String getString(String k,String d){return d;} public Editor edit(){return new Editor();}
  public static class Editor { public Editor putString(String k,String v){return this;} public void apply(){} }
 }''',
@@ -118,13 +119,18 @@ public class AudioManager {
     'com/steve/spotifywakeprobe/WakeMicrophone.java': '''package com.steve.spotifywakeprobe;public class WakeMicrophone {public static int opened,closed;
  public WakeMicrophone(android.content.Context c,org.vosk.Model m){opened++;}public void start(org.vosk.android.RecognitionListener l,Runnable ready){ready.run();}public void close(){closed++;}public long resultAudioMs(){return 0;}}''',
     'com/steve/spotifywakeprobe/DiagnosticHistory.java': '''package com.steve.spotifywakeprobe;import android.content.Context;public class DiagnosticHistory {
- public static void clearLegacyStatus(Context c){}public static void resetWakeResults(){}public static void record(Context c,String s){}public static void flushWakeResults(Context c){}public static String recordWakeResult(Context c,String s,long n){return null;}}''',
+ public static final java.util.List<String> events=new java.util.ArrayList<>();public static void clearLegacyStatus(Context c){}public static void resetWakeResults(){}public static void record(Context c,String s){events.add(s);}public static void flushWakeResults(Context c){}public static String recordWakeResult(Context c,String s,long n){return null;}}''',
     'com/steve/spotifywakeprobe/SpotifyController.java': '''package com.steve.spotifywakeprobe;import android.content.Context;import java.util.*;import java.util.function.Consumer;public class SpotifyController {
  public static int dispatched,cancelled;public static Runnable execute(Context c,VoiceCommand v,List<String> n,Consumer<String> r){dispatched++;return ()->cancelled++;}
  public static Runnable playPlaylist(Context c,String u,Consumer<String> r){return execute(c,null,null,r);}
  public static Thread fetchPlaylists(Context c,Consumer<List<PlaylistBrowse.Entry>> r,Consumer<String> f){return new Thread();}}''',
     'com/steve/spotifywakeprobe/SpotifySpecialPlayback.java': 'package com.steve.spotifywakeprobe;import java.util.*;import java.util.function.Consumer;public class SpotifySpecialPlayback {public static Runnable start(android.content.Context c,VoiceCommand v,List<String> n,Runnable b,Consumer<String> r){return ()->{};}}',
     'com/steve/spotifywakeprobe/MainActivity.java': 'package com.steve.spotifywakeprobe;public class MainActivity {}',
+    'com/steve/spotifywakeprobe/PlaceMonitor.java': '''package com.steve.spotifywakeprobe;public class PlaceMonitor implements AutoCloseable {
+ public static PlaceMonitor last;public static boolean wifi,bluetooth;public boolean started,closed;final java.util.function.Consumer<Boolean> changed;
+ public PlaceMonitor(android.content.Context c,java.util.function.Consumer<Boolean> changed){this.changed=changed;last=this;}
+ public void start(){started=true;}public boolean allowed(){return !closed&&(wifi||bluetooth);}
+ public void set(boolean w,boolean b){wifi=w;bluetooth=b;changed.accept(wifi||bluetooth);}public void close(){closed=true;}}''',
 }
 paths = []
 for name, content in files.items():
@@ -140,6 +146,7 @@ if (source / 'CallAudioMonitor.java').exists():
 classes = out / 'classes'
 subprocess.run(['javac', '-cp', str(platform), '-d', str(classes), *paths,
                 *[str(source / f'{name}.java') for name in production],
-                str(root / 'tests/CallInterruptionCheck.java')], check=True)
-subprocess.run(['java', '-cp', str(classes) + os.pathsep + str(platform),
-                'com.steve.spotifywakeprobe.CallInterruptionCheck'], check=True)
+                str(root / 'tests/CallInterruptionCheck.java'), str(root / 'tests/PlaceGateCheck.java')], check=True)
+for check in ('CallInterruptionCheck', 'PlaceGateCheck'):
+    subprocess.run(['java', '-cp', str(classes) + os.pathsep + str(platform),
+                    f'com.steve.spotifywakeprobe.{check}'], check=True)
