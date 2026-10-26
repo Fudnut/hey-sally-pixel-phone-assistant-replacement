@@ -52,6 +52,7 @@ public class WakeService extends Service {
     private static final int ERROR_NOTIFICATION_ID = 2;
     private static final long WAKE_SUMMARY_INTERVAL_MS = 5 * 60 * 1000L;
     private static final long HEARTBEAT_INTERVAL_MS = 30 * 60 * 1000L;
+    private static final long PLACE_GRACE_MS = 15000;
     private SpeechService speech;
     private WakeMicrophone wakeMicrophone;
     private AndroidCarAudioSession carAudio;
@@ -96,6 +97,9 @@ public class WakeService extends Service {
     private CallAudioMonitor calls;
     private Runnable resumeAfterCall;
     private Runnable resumeAfterAudio;
+    private PlaceMonitor places;
+    private boolean placePaused;
+    private Runnable placeGrace;
     private final Runnable wakeSummary = new Runnable() {
         @Override public void run() {
             if (destroyed) return;
@@ -154,7 +158,17 @@ public class WakeService extends Service {
         if (calls == null) calls = new CallAudioMonitor(this, this::callStateChanged,
                 () -> carAudio != null && carAudio.ownsCommunicationMode());
         calls.start();
-        if (inputChanged && model != null) {
+        boolean placeGate = getSharedPreferences("probe", MODE_PRIVATE).getBoolean("placeGate", false);
+        boolean resumePlace = false;
+        if (placeGate && places == null) {
+            places = new PlaceMonitor(this, this::placeChanged);
+            places.start();
+            if (model != null && !places.allowed()) placeChanged(false);
+        } else if (!placeGate && places != null) {
+            closePlaces();
+            resumePlace = placePaused;
+        }
+        if ((inputChanged || resumePlace) && model != null) {
             try { listen(false); } catch (IOException | RuntimeException error) { fail(error); }
         }
         if (!loading && speech == null && model == null) {
@@ -334,6 +348,46 @@ public class WakeService extends Service {
         }
     }
 
+    // Car-microphone mode is not gated: it already listens only through the car.
+    private boolean placeAllowed() {
+        return places == null || carInputEnabled || places.allowed();
+    }
+
+    private void placeChanged(boolean allowed) {
+        if (destroyed) return;
+        if (placeGrace != null) { handler.removeCallbacks(placeGrace); placeGrace = null; }
+        if (allowed) {
+            if (!placePaused || model == null) return;
+            DiagnosticHistory.record(this, "PLACE_RESUMED");
+            try { listen(false); } catch (IOException | RuntimeException error) { fail(error); }
+            return;
+        }
+        if (placePaused || carInputEnabled) return;
+        // Let Bluetooth connect as Wi-Fi drops (leaving home in the car) without restarting capture.
+        placeGrace = () -> {
+            placeGrace = null;
+            // An active command or reply finishes first; its own listen(false) then pauses.
+            if (destroyed || model == null || placeAllowed() || awaitingCommand || replying) return;
+            try { listen(false); } catch (IOException | RuntimeException error) { fail(error); }
+        };
+        handler.postDelayed(placeGrace, PLACE_GRACE_MS);
+    }
+
+    private void pauseForPlace() {
+        if (placeGrace != null) { handler.removeCallbacks(placeGrace); placeGrace = null; }
+        if (placePaused) return;
+        placePaused = true;
+        listenReadyAt = 0;
+        update("Paused: no Wi-Fi or Bluetooth audio");
+        Log.i(TAG, "LISTENING_PAUSED_PLACE");
+        DiagnosticHistory.record(this, "PLACE_PAUSED");
+    }
+
+    private void closePlaces() {
+        if (placeGrace != null) { handler.removeCallbacks(placeGrace); placeGrace = null; }
+        if (places != null) { places.close(); places = null; }
+    }
+
     private void listen(boolean forCommand) throws IOException {
         if (destroyed || (calls != null && calls.isCallActive())) return;
         if (resumeAfterAudio != null) { handler.removeCallbacks(resumeAfterAudio); resumeAfterAudio = null; }
@@ -363,6 +417,11 @@ public class WakeService extends Service {
             speechStartedAt = 0;
         }
         else if (!holdFocusForCommand) releaseAudioFocus();
+        if (!forCommand) {
+            // Recognition is already suspended here, so pausing closes the microphone.
+            if (!placeAllowed()) { pauseForPlace(); return; }
+            placePaused = false;
+        }
         awaitingCommand = forCommand;
         lastCommandHypothesis = "";
         partialCandidate = "";
@@ -939,6 +998,7 @@ public class WakeService extends Service {
         if (focusLimit != null) handler.removeCallbacks(focusLimit);
         releaseAudioFocus();
         closeCarAudio();
+        closePlaces();
         if (calls != null) { calls.close(); calls = null; }
         if (model != null) { model.close(); model = null; }
         Log.i(TAG, "LISTENING_STOPPED");
