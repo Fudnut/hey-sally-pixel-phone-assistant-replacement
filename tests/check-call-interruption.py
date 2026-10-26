@@ -18,7 +18,8 @@ public class Context {
  public final android.telecom.TelecomManager telecom=new android.telecom.TelecomManager();
  public final List<BroadcastReceiver> receivers=new ArrayList<>(); public boolean phonePermission=true;
  public <T> T getSystemService(Class<T> type) {
-  Object result=type==android.media.AudioManager.class?audio:type==android.telecom.TelecomManager.class?telecom:new android.app.NotificationManager();
+  Object result=type==android.media.AudioManager.class?audio:type==android.telecom.TelecomManager.class?telecom
+   :type==android.app.KeyguardManager.class?new android.app.KeyguardManager():type==android.os.PowerManager.class?new android.os.PowerManager():new android.app.NotificationManager();
   return type.cast(result);
  }
  public int checkSelfPermission(String p){return p.equals("android.permission.READ_PHONE_STATE")&&!phonePermission?-1:0;}
@@ -65,6 +66,10 @@ public class Context {
  public void createNotificationChannel(NotificationChannel c){} public void cancel(int i){} public void notify(int i,Notification n){} }''',
     'android/app/PendingIntent.java': '''package android.app; public class PendingIntent {public static final int FLAG_IMMUTABLE=1,FLAG_UPDATE_CURRENT=2;
  public static PendingIntent getActivity(android.content.Context c,int n,android.content.Intent i,int f){return new PendingIntent();}}''',
+    'android/app/KeyguardManager.java': 'package android.app; public class KeyguardManager {public boolean isKeyguardLocked(){return false;}}',
+    'android/os/PowerManager.java': 'package android.os; public class PowerManager {public boolean isInteractive(){return true;}}',
+    'org/json/JSONObject.java': '''package org.json; public class JSONObject {String json; public JSONObject(String s){json=s;}
+ public String optString(String k){var m=java.util.regex.Pattern.compile("\\"" + k + "\\" *: *\\"([^\\"]*)\\"").matcher(json);return m.find()?m.group(1):"";}}''',
     'android/os/Looper.java': 'package android.os; public class Looper {public static Looper getMainLooper(){return new Looper();}}',
     'android/os/Handler.java': '''package android.os; import java.util.*; public class Handler {
  public static final Map<Runnable,Long> timers=new LinkedHashMap<>(); public static long now;
@@ -90,7 +95,7 @@ public class AudioManager {
  public int requestAudioFocus(AudioFocusRequest r){focus=r;focusRequests++;return focusResult;} public int abandonAudioFocusRequest(AudioFocusRequest r){abandons++;return 1;}
  public void dispatchMediaKeyEvent(KeyEvent e){keys.add(e.action+":"+e.code);}
 }''',
-    'android/media/ToneGenerator.java': 'package android.media; public class ToneGenerator {public static final int TONE_PROP_BEEP=1;public ToneGenerator(int s,int v){}public void startTone(int t,int d){}public void release(){}}',
+    'android/media/ToneGenerator.java': 'package android.media; public class ToneGenerator {public static final int TONE_PROP_BEEP=1;public static int beeps;public ToneGenerator(int s,int v){}public void startTone(int t,int d){beeps++;}public void release(){}}',
     'android/view/KeyEvent.java': 'package android.view; public class KeyEvent {public static final int ACTION_DOWN=0,ACTION_UP=1,KEYCODE_MEDIA_PAUSE=127;public int action,code;public KeyEvent(int a,int c){action=a;code=c;}}',
     'android/telecom/TelecomManager.java': '''package android.telecom; public class TelecomManager {
  public boolean busy,denied; public java.util.Deque<Boolean> probes=new java.util.ArrayDeque<>();
@@ -104,9 +109,9 @@ public class AudioManager {
  public static SpeechRecognizer createSpeechRecognizer(android.content.Context c){return new SpeechRecognizer();}
  public void setRecognitionListener(RecognitionListener l){} public void startListening(android.content.Intent i){starts++;} public void cancel(){} public void destroy(){}
 }''',
-    'android/speech/tts/TextToSpeech.java': '''package android.speech.tts; public class TextToSpeech {public static final int SUCCESS=0,ERROR=-1,QUEUE_FLUSH=0;public static int stops;
- public interface OnInitListener {void onInit(int s);}public TextToSpeech(android.content.Context c,OnInitListener l){}public void setAudioAttributes(android.media.AudioAttributes a){}
- public void setOnUtteranceProgressListener(UtteranceProgressListener l){}public int speak(String s,int q,android.os.Bundle b,String id){return 0;}public void stop(){stops++;}public void shutdown(){}
+    'android/speech/tts/TextToSpeech.java': '''package android.speech.tts; public class TextToSpeech {public static final int SUCCESS=0,ERROR=-1,QUEUE_FLUSH=0;public static int stops,created;public static TextToSpeech last;public OnInitListener init;public UtteranceProgressListener progress;
+ public interface OnInitListener {void onInit(int s);}public TextToSpeech(android.content.Context c,OnInitListener l){init=l;last=this;created++;}public void setAudioAttributes(android.media.AudioAttributes a){}
+ public void setOnUtteranceProgressListener(UtteranceProgressListener l){progress=l;}public int speak(String s,int q,android.os.Bundle b,String id){return 0;}public void stop(){stops++;}public void shutdown(){}
 }''',
     'android/speech/tts/UtteranceProgressListener.java': 'package android.speech.tts;public abstract class UtteranceProgressListener {public abstract void onStart(String s);public abstract void onDone(String s);public abstract void onError(String s);}',
     'android/util/Log.java': 'package android.util;public class Log {public static int i(String t,String s){return 0;}public static int e(String t,String s){return 0;}public static int w(String t,String s){return 0;}}',
@@ -115,15 +120,24 @@ public class AudioManager {
     'org/vosk/android/RecognitionListener.java': 'package org.vosk.android;public interface RecognitionListener {void onPartialResult(String s);void onResult(String s);void onFinalResult(String s);void onError(Exception e);void onTimeout();}',
     'org/vosk/android/SpeechService.java': 'package org.vosk.android;public class SpeechService {public SpeechService(org.vosk.Recognizer r,float f){}public void startListening(RecognitionListener l,int t){}public void cancel(){}public void shutdown(){}}',
     'org/vosk/android/StorageService.java': 'package org.vosk.android;public class StorageService {public static void unpack(android.content.Context c,String a,String b,java.util.function.Consumer<org.vosk.Model> ok,java.util.function.Consumer<Exception> error){ok.accept(new org.vosk.Model());}}',
-    'com/steve/spotifywakeprobe/WakeMicrophone.java': '''package com.steve.spotifywakeprobe;public class WakeMicrophone {public static int opened,closed;public static WakeMicrophone last;public static boolean lastCar,lastCommand;java.util.function.Consumer<Boolean> route;
- public WakeMicrophone(android.content.Context c,org.vosk.Model m){this(c,m,false,false,null);}public WakeMicrophone(android.content.Context c,org.vosk.Model m,boolean car,boolean command,java.util.function.Consumer<Boolean> route){opened++;last=this;lastCar=car;lastCommand=command;this.route=route;}boolean started;public boolean isStarted(){return started;}public void start(org.vosk.android.RecognitionListener l,Runnable ready){started=true;if(route!=null)route.accept(true);ready.run();}public void pause(){}public void resume(org.vosk.android.RecognitionListener l,Runnable ready,boolean command){lastCommand=command;ready.run();}public void close(){closed++;}public long resultAudioMs(){return 0;}}''',
-    'com/steve/spotifywakeprobe/AndroidCarAudioSession.java': '''package com.steve.spotifywakeprobe;public class AndroidCarAudioSession implements AutoCloseable {public final CarAudioSession session;public static boolean preserveForeignMode;boolean own,closing;
- public AndroidCarAudioSession(android.content.Context c,java.util.function.BooleanSupplier call,Runnable beforeClose,java.util.function.Consumer<String> error){session=new CarAudioSession(new CarAudioSession.Platform(){public boolean hasPermissions(){return c.checkSelfPermission("android.permission.READ_PHONE_STATE")==0;}public boolean hasActiveCall(){return call.getAsBoolean();}public boolean requestRoute(){own=true;c.audio.mode(3);return true;}public void stopCapture(){beforeClose.run();}public void releaseRoute(){c.audio.mode(preserveForeignMode?3:0);own=false;}public void schedule(Runnable r,long ms){new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(r,ms);}public void cancel(Runnable r){new android.os.Handler(android.os.Looper.getMainLooper()).removeCallbacks(r);}public void report(String s){if(!session.isActive()&&!closing)error.accept(s);}});}
+    'com/steve/spotifywakeprobe/WakeMicrophone.java': '''package com.steve.spotifywakeprobe;import org.vosk.android.RecognitionListener;public class WakeMicrophone {
+ public static int opened,closed;public static WakeMicrophone last;public static boolean lastCar,lastCommand,holdBluetooth;public static final java.util.List<String> trace=new java.util.ArrayList<>();
+ java.util.function.Consumer<Boolean> route;public final boolean car;public boolean command,started,isClosed,bluetooth;public RecognitionListener listener;Runnable ready;
+ public WakeMicrophone(android.content.Context c,org.vosk.Model m){this(c,m,false,false,null);}
+ public WakeMicrophone(android.content.Context c,org.vosk.Model m,boolean car,boolean command,java.util.function.Consumer<Boolean> route){opened++;last=this;lastCar=car;lastCommand=command;this.car=car;this.command=command;this.route=route;trace.add("open "+(car?"car":"phone"));}
+ public boolean isStarted(){return started;}public void start(RecognitionListener l,Runnable ready){started=true;phase(l,ready);}
+ public void pause(){listener=null;ready=null;}public void resume(RecognitionListener l,Runnable ready,boolean command){lastCommand=this.command=command;phase(l,ready);}
+ void phase(RecognitionListener l,Runnable r){listener=l;ready=r;if(!car||bluetooth||!holdBluetooth)input(true);}
+ /** Actual routed input reported by the recorder; readiness follows confirmed Bluetooth PCM only. */
+ public void input(boolean bt){if(car)bluetooth=bt;if(route!=null)route.accept(bt);if((bt||!car)&&ready!=null){Runnable r=ready;ready=null;r.run();}}
+ public void close(){if(!isClosed){isClosed=true;closed++;trace.add("close "+(car?"car":"phone"));}}public long resultAudioMs(){return 0;}}''',
+    'com/steve/spotifywakeprobe/AndroidCarAudioSession.java': '''package com.steve.spotifywakeprobe;public class AndroidCarAudioSession implements AutoCloseable {public final CarAudioSession session;public static boolean preserveForeignMode,noRoute;public static int requests;public static AndroidCarAudioSession last;boolean own,closing;
+ public AndroidCarAudioSession(android.content.Context c,java.util.function.BooleanSupplier call,Runnable beforeClose,java.util.function.Consumer<String> error){session=new CarAudioSession(new CarAudioSession.Platform(){public boolean hasPermissions(){return c.checkSelfPermission("android.permission.READ_PHONE_STATE")==0;}public boolean hasActiveCall(){return call.getAsBoolean();}public boolean requestRoute(){requests++;WakeMicrophone.trace.add("route request");if(noRoute)return false;own=true;c.audio.mode(3);return true;}public void stopCapture(){beforeClose.run();}public void releaseRoute(){WakeMicrophone.trace.add("route release");c.audio.mode(preserveForeignMode?3:0);own=false;}public void schedule(Runnable r,long ms){new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(r,ms);}public void cancel(Runnable r){new android.os.Handler(android.os.Looper.getMainLooper()).removeCallbacks(r);}public void report(String s){if(!session.isActive()&&!closing)error.accept(s);}});last=this;}
  public boolean ownsCommunicationMode(){return own;}public void close(){closing=true;session.stop();}}''',
     'com/steve/spotifywakeprobe/DiagnosticHistory.java': '''package com.steve.spotifywakeprobe;import android.content.Context;public class DiagnosticHistory {
  public static final java.util.List<String> events=new java.util.ArrayList<>();public static void clearLegacyStatus(Context c){}public static void resetWakeResults(){}public static void record(Context c,String s){events.add(s);}public static void flushWakeResults(Context c){}public static String recordWakeResult(Context c,String s,long n){return null;}}''',
     'com/steve/spotifywakeprobe/SpotifyController.java': '''package com.steve.spotifywakeprobe;import android.content.Context;import java.util.*;import java.util.function.Consumer;public class SpotifyController {
- public static int dispatched,cancelled;public static Runnable duringDispatch;public static Runnable execute(Context c,VoiceCommand v,List<String> n,Consumer<String> r){dispatched++;if(duringDispatch!=null)duringDispatch.run();return ()->cancelled++;}
+ public static int dispatched,cancelled;public static Runnable duringDispatch;public static Consumer<String> lastReport;public static Runnable execute(Context c,VoiceCommand v,List<String> n,Consumer<String> r){dispatched++;lastReport=r;WakeMicrophone.trace.add("dispatch");if(duringDispatch!=null)duringDispatch.run();return ()->cancelled++;}
  public static Runnable playPlaylist(Context c,String u,Consumer<String> r){return execute(c,null,null,r);}
  public static Thread fetchPlaylists(Context c,Consumer<List<PlaylistBrowse.Entry>> r,Consumer<String> f){return new Thread();}}''',
     'com/steve/spotifywakeprobe/SpotifySpecialPlayback.java': 'package com.steve.spotifywakeprobe;import java.util.*;import java.util.function.Consumer;public class SpotifySpecialPlayback {public static Runnable start(android.content.Context c,VoiceCommand v,List<String> n,Runnable b,Consumer<String> r){return ()->{};}}',
@@ -148,7 +162,8 @@ if (source / 'CallAudioMonitor.java').exists():
 classes = out / 'classes'
 subprocess.run(['javac', '-cp', str(platform), '-d', str(classes), *paths,
                 *[str(source / f'{name}.java') for name in production],
-                str(root / 'tests/CallInterruptionCheck.java'), str(root / 'tests/PlaceGateCheck.java')], check=True)
-for check in ('CallInterruptionCheck', 'PlaceGateCheck'):
+                str(root / 'tests/CallInterruptionCheck.java'), str(root / 'tests/PlaceGateCheck.java'),
+                str(root / 'tests/CarConversationCheck.java')], check=True)
+for check in ('CallInterruptionCheck', 'PlaceGateCheck', 'CarConversationCheck'):
     subprocess.run(['java', '-cp', str(classes) + os.pathsep + str(platform),
                     f'com.steve.spotifywakeprobe.{check}'], check=True)

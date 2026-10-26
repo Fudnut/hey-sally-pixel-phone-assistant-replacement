@@ -56,7 +56,10 @@ public class WakeService extends Service {
     private SpeechService speech;
     private WakeMicrophone wakeMicrophone;
     private AndroidCarAudioSession carAudio;
-    private boolean carInputEnabled;
+    // Saved setting: Hey Sally on the phone microphone, then each conversation through the car.
+    // carAudio is the active phase: non-null only from an accepted wake until that conversation ends.
+    private boolean carConversations;
+    private boolean carReleasing;
     private Recognizer recognizer;
     private Model model;
     private boolean loading;
@@ -75,6 +78,7 @@ public class WakeService extends Service {
     private long commandStartedAt;
     private long speechStartedAt;
     private AudioFocusRequest focusRequest;
+    private int focusGeneration;
     private boolean focusHeld;
     private boolean focusRequested;
     private boolean holdFocusForCommand;
@@ -149,12 +153,12 @@ public class WakeService extends Service {
             handler.postDelayed(wakeSummary, WAKE_SUMMARY_INTERVAL_MS);
         }
         boolean nextCarInput = getSharedPreferences("probe", MODE_PRIVATE).getBoolean("carInput", false);
-        boolean inputChanged = carInputEnabled != nextCarInput;
+        boolean inputChanged = carConversations != nextCarInput;
         if (inputChanged) {
             commandSequence++; cancelOrdinaryPlayback(); stopReply(); suspendRecognition();
-            finishCommandFocus(); closeCarAudio(); focusRequest = null;
+            finishCommandFocus(); closeCarAudio();
         }
-        carInputEnabled = nextCarInput;
+        carConversations = nextCarInput;
         if (calls == null) calls = new CallAudioMonitor(this, this::callStateChanged,
                 () -> carAudio != null && carAudio.ownsCommunicationMode());
         calls.start();
@@ -224,7 +228,8 @@ public class WakeService extends Service {
             suspendRecognition();
             finishCommandFocus();
             closeCarAudio();
-            if (model != null && !carInputEnabled) {
+            // Car conversations recover to phone wake too; they never take a command from it.
+            if (model != null) {
                 if (listenReadyAt > 0 && SystemClock.elapsedRealtime() - listenReadyAt > 60000)
                     listenFailures = 0;
                 listenReadyAt = 0;
@@ -274,7 +279,7 @@ public class WakeService extends Service {
         generation++;
         awaitingCommand = false;
         if (wakeMicrophone != null) {
-            if (retainCarRecorder && carInputEnabled) wakeMicrophone.pause();
+            if (retainCarRecorder && carAudio != null) wakeMicrophone.pause();
             else { wakeMicrophone.close(); wakeMicrophone = null; }
         }
         if (speech != null) { speech.cancel(); speech.shutdown(); speech = null; }
@@ -292,8 +297,36 @@ public class WakeService extends Service {
         }
     }
 
+    // Commands and replies in a car conversation need its verified route; idle wake uses the phone.
     private boolean carReady() {
-        return !carInputEnabled || (carAudio != null && carAudio.session.isReady());
+        return !carConversations || (carAudio != null && carAudio.session.isReady());
+    }
+
+    private void startCarConversation() {
+        AndroidCarAudioSession[] created = new AndroidCarAudioSession[1];
+        created[0] = new AndroidCarAudioSession(this,
+                () -> calls != null && calls.isCallActive(),
+                () -> { if (created[0] == carAudio && !carReleasing) stopCarCapture(); },
+                category -> carConversationEnded(created[0], category));
+        DiagnosticHistory.record(this, "CAR_CONVERSATION_START");
+        update("Heard Hey Sally; connecting to the car");
+        // Publish the session before its synchronous mode request reaches CallAudioMonitor.
+        carAudio = created[0];
+        carAudio.session.start();
+    }
+
+    /** Normal end of a conversation: close car capture, then release the route, keeping pending work. */
+    private void releaseCarConversation() {
+        if (carAudio == null) return;
+        suspendRecognition();
+        carReleasing = true;
+        try { closeCarAudio(); } finally { carReleasing = false; }
+    }
+
+    // The route ended on its own (timeout, loss, permission or call); an older session's report is ignored.
+    private void carConversationEnded(AndroidCarAudioSession owner, String category) {
+        if (destroyed || owner != carAudio) return;
+        interruptCarConversation();
     }
 
     private void stopCarCapture() {
@@ -301,7 +334,7 @@ public class WakeService extends Service {
         cancelOrdinaryPlayback(); stopReply(); suspendRecognition(); finishCommandFocus();
     }
 
-    private void carFocusInterrupted() {
+    private void interruptCarConversation() {
         int request = ++commandSequence;
         cancelOrdinaryPlayback(); stopReply(); playlists.clear();
         suspendRecognition(); finishCommandFocus(); closeCarAudio();
@@ -348,9 +381,9 @@ public class WakeService extends Service {
         }
     }
 
-    // Car-microphone mode is not gated: it already listens only through the car.
+    // Car conversations still wait for Hey Sally on the phone microphone, so they are gated too.
     private boolean placeAllowed() {
-        return places == null || carInputEnabled || places.allowed();
+        return places == null || places.allowed();
     }
 
     private void placeChanged(boolean allowed) {
@@ -362,12 +395,12 @@ public class WakeService extends Service {
             try { listen(false); } catch (IOException | RuntimeException error) { fail(error); }
             return;
         }
-        if (placePaused || carInputEnabled) return;
+        if (placePaused) return;
         // Let Bluetooth connect as Wi-Fi drops (leaving home in the car) without restarting capture.
         placeGrace = () -> {
             placeGrace = null;
             // An active command or reply finishes first; its own listen(false) then pauses.
-            if (destroyed || model == null || placeAllowed() || awaitingCommand || replying) return;
+            if (destroyed || model == null || placeAllowed() || awaitingCommand || replying || carAudio != null) return;
             try { listen(false); } catch (IOException | RuntimeException error) { fail(error); }
         };
         handler.postDelayed(placeGrace, PLACE_GRACE_MS);
@@ -391,20 +424,14 @@ public class WakeService extends Service {
     private void listen(boolean forCommand) throws IOException {
         if (destroyed || (calls != null && calls.isCallActive())) return;
         if (resumeAfterAudio != null) { handler.removeCallbacks(resumeAfterAudio); resumeAfterAudio = null; }
-        suspendRecognition(carInputEnabled);
-        if (carInputEnabled) {
-            if (carAudio == null) {
-                carAudio = new AndroidCarAudioSession(this,
-                        () -> calls != null && calls.isCallActive(),
-                        this::stopCarCapture,
-                        category -> fail(new IOException("Car audio interrupted")));
-                carAudio.session.start();
-            }
-            AndroidCarAudioSession selected = carAudio;
-            if (selected == null || !selected.session.checkAccess() || selected != carAudio) return;
-        }
+        boolean car = forCommand && carConversations;
+        // Any other phase ends a car conversation: car capture closes, then its route is released.
+        if (!car) releaseCarConversation();
+        // Releasing the lease can expose a foreign call, which has already cancelled this work.
+        if (destroyed || (calls != null && calls.isCallActive())) return;
+        // An accepted wake closes the phone recorder before any car route request.
+        suspendRecognition(car);
         if (forCommand) {
-            if (!carReady()) return;
             takeAudioFocus();
             if (!focusHeld) {
                 finishCommandFocus();
@@ -417,6 +444,12 @@ public class WakeService extends Service {
             speechStartedAt = 0;
         }
         else if (!holdFocusForCommand) releaseAudioFocus();
+        if (car) {
+            // Readiness comes from the car recorder's actual Bluetooth input, not from this request.
+            if (carAudio == null) startCarConversation();
+            AndroidCarAudioSession selected = carAudio;
+            if (selected == null || !selected.session.checkAccess() || selected != carAudio) return;
+        }
         if (!forCommand) {
             // Recognition is already suspended here, so pausing closes the microphone.
             if (!placeAllowed()) { pauseForPlace(); return; }
@@ -426,7 +459,7 @@ public class WakeService extends Service {
         lastCommandHypothesis = "";
         partialCandidate = "";
         int current = generation;
-        if (forCommand && !carInputEnabled && systemRecognitionAvailable(this)) {
+        if (forCommand && !carConversations && systemRecognitionAvailable(this)) {
             startDeviceCommand(current);
             return;
         }
@@ -448,16 +481,17 @@ public class WakeService extends Service {
                 }
             }
         };
-        if (!forCommand || carInputEnabled) {
+        if (!forCommand || car) {
             AndroidCarAudioSession owner = carAudio;
-            if (wakeMicrophone == null) wakeMicrophone = new WakeMicrophone(this, model, carInputEnabled, forCommand,
-                    input -> {
+            if (wakeMicrophone == null) wakeMicrophone = new WakeMicrophone(this, model, car, forCommand,
+                    car ? input -> {
                         if (owner != null && carAudio == owner)
                             owner.session.onInput(input);
-                    });
+                    } : null);
             Runnable ready = () -> {
-                if (current != generation || destroyed || !carReady()) return;
+                if (current != generation || destroyed || (forCommand && !carReady())) return;
                 if (forCommand) {
+                    if (carAudio != null) carAudio.session.beginConversation();
                     commandReadyBeep();
                     update("Heard Hey Sally; say a command");
                     DiagnosticHistory.record(this, "COMMAND_READY CAR_LOCAL");
@@ -469,7 +503,7 @@ public class WakeService extends Service {
                 Log.i(TAG, "LISTENING_READY");
                 DiagnosticHistory.record(this, "LISTENING_READY");
             };
-            if (carInputEnabled && wakeMicrophone.isStarted()) wakeMicrophone.resume(listener, ready, forCommand);
+            if (car && wakeMicrophone.isStarted()) wakeMicrophone.resume(listener, ready, forCommand);
             else wakeMicrophone.start(listener, ready);
             return;
         }
@@ -606,7 +640,7 @@ public class WakeService extends Service {
     }
 
     private void heard(int current, String json, String key, boolean complete) {
-        if (current != generation || destroyed || !carReady()) return;
+        if (current != generation || destroyed || (awaitingCommand && !carReady())) return;
         try {
             String words = new JSONObject(json).optString(key);
             if (awaitingCommand) {
@@ -666,7 +700,7 @@ public class WakeService extends Service {
 
     private void commandReadyBeep() {
         try {
-            ToneGenerator tone = new ToneGenerator(carInputEnabled
+            ToneGenerator tone = new ToneGenerator(carAudio != null
                     ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_NOTIFICATION, 80);
             tone.startTone(ToneGenerator.TONE_PROP_BEEP, 120);
             handler.postDelayed(tone::release, 200);
@@ -757,6 +791,7 @@ public class WakeService extends Service {
             }
         }
         holdFocusForCommand = focusRequested;
+        // Ends a car conversation gracefully: the route is released but this request stays current.
         listen(false);
         // listen() can discover a call and synchronously cancel this request.
         if (destroyed || (calls != null && calls.isCallActive()) || request != commandSequence) return;
@@ -770,14 +805,19 @@ public class WakeService extends Service {
             handler.postDelayed(focusLimit, 15000);
         }
         java.util.function.Consumer<String> report = message -> handler.post(() -> {
-            if (destroyed || request != commandSequence || !carReady()) return;
-            if (!commandStatus(commandLabel, message) && beginReply(request, commandLabel, true))
+            if (destroyed || request != commandSequence || commandStatus(commandLabel, message)) return;
+            // A car conversation's reply needs its verified route, released by now; never use the handset.
+            if (!carReady()) {
+                DiagnosticHistory.record(this, "COMMAND_FEEDBACK_SKIPPED NO_CAR_ROUTE");
+                return;
+            }
+            if (beginReply(request, commandLabel, true))
                 speakReply(request, CommandFailure.spoken(CommandFailure.code(message)), false);
         });
         // Recognition is complete. Let the requested player own focus before it
         // starts; its normal focus acquisition is an intentional handoff.
-        if (carInputEnabled) finishCommandFocus();
-        if (destroyed || !carReady() || request != commandSequence
+        if (carConversations) finishCommandFocus();
+        if (destroyed || request != commandSequence
                 || (calls != null && calls.isCallActive())) return;
         cancelOrdinaryPlayback = selected != null
                 ? SpotifyController.playPlaylist(this, selected.uri, report)
@@ -797,7 +837,7 @@ public class WakeService extends Service {
 
     private boolean beginReply(int request, String label, boolean feedback) {
         if (destroyed || !carReady() || (calls != null && calls.isCallActive())) return false;
-        suspendRecognition(carInputEnabled);
+        suspendRecognition(true);
         replying = true;
         pagePending = false;
         replyLabel = label;
@@ -858,7 +898,7 @@ public class WakeService extends Service {
         try {
             spokenReply.setAudioAttributes(new AudioAttributes.Builder()
                         // Follow Spotify's media volume, including Bluetooth's per-route setting.
-                        .setUsage(carInputEnabled ? AudioAttributes.USAGE_VOICE_COMMUNICATION : AudioAttributes.USAGE_MEDIA)
+                        .setUsage(carAudio != null ? AudioAttributes.USAGE_VOICE_COMMUNICATION : AudioAttributes.USAGE_MEDIA)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
             spokenReply.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                     @Override public void onStart(String id) {
@@ -898,7 +938,7 @@ public class WakeService extends Service {
         String label = replyLabel;
         stopReply();
         if (feedbackReply) {
-            finishCommandFocus();
+            finishConversationFocus();
             update("Listening for Hey Sally");
         } else commandStatus(label, success ? "Spotify: playlist reply" : "Playlist reply failed");
         // Leave a short gap for speaker/Bluetooth audio to drain before reopening the microphone.
@@ -930,9 +970,16 @@ public class WakeService extends Service {
         DiagnosticHistory.record(this, success ? "COMMAND_RESULT OK" : "COMMAND_RESULT ERROR reason=" + reason);
         getSharedPreferences("probe", MODE_PRIVATE).edit()
                 .putString("lastCommand", Instant.now() + " " + status).apply();
-        finishCommandFocus();
+        finishConversationFocus();
         update(success ? "Listening for Hey Sally" : "Command failed; open app");
         return success;
+    }
+
+    // A car conversation keeps music paused until listen(false) has released its route,
+    // so music resumes in stereo rather than briefly through the hands-free channel.
+    private void finishConversationFocus() {
+        if (carAudio == null) finishCommandFocus();
+        else holdFocusForCommand = false;
     }
 
     private void finishCommandFocus() {
@@ -944,17 +991,20 @@ public class WakeService extends Service {
 
     private void takeAudioFocus() {
         if (destroyed || (calls != null && calls.isCallActive())) return;
+        int owner = focusGeneration;
         if (focusRequest == null) focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                 .setAudioAttributes(new AudioAttributes.Builder()
-                        .setUsage(carInputEnabled ? AudioAttributes.USAGE_VOICE_COMMUNICATION : AudioAttributes.USAGE_ASSISTANT)
+                        .setUsage(carConversations ? AudioAttributes.USAGE_VOICE_COMMUNICATION : AudioAttributes.USAGE_ASSISTANT)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
                 .setOnAudioFocusChangeListener(change -> {
+                    // A released request's late callback must not reach a newer conversation.
+                    if (owner != focusGeneration) return;
                     if (change == AudioManager.AUDIOFOCUS_GAIN) {
                         if (focusRequested) focusHeld = true;
                     } else if (change < 0) {
                         focusHeld = false;
-                        if (carInputEnabled && focusRequested) {
-                            carFocusInterrupted();
+                        if (carConversations && focusRequested) {
+                            interruptCarConversation();
                             return;
                         }
                         // Google Speech Services temporarily takes exclusive focus. Keep our
@@ -979,6 +1029,7 @@ public class WakeService extends Service {
         focusHeld = false;
         focusRequested = false;
         if (release) getSystemService(AudioManager.class).abandonAudioFocusRequest(focusRequest);
+        if (focusRequest != null) { focusRequest = null; focusGeneration++; }
     }
 
     @Override public void onDestroy() {

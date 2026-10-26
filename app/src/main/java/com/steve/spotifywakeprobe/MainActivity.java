@@ -52,11 +52,11 @@ public class MainActivity extends Activity {
         status = new TextView(this);
         layout.addView(status);
         CheckBox carInput = new CheckBox(this);
-        carInput.setText("Use car microphone (tap Start to apply)");
+        carInput.setText("Car conversations: Hey Sally on the phone microphone, then the car microphone and speakers (tap Start to apply)");
         carInput.setChecked(getSharedPreferences("probe", MODE_PRIVATE).getBoolean("carInput", false));
         carInput.setOnCheckedChangeListener((button, checked) -> {
             getSharedPreferences("probe", MODE_PRIVATE).edit().putBoolean("carInput", checked).apply();
-            showMessage("Microphone choice saved. Tap Grant permissions and start probe to apply.");
+            showMessage("Car conversation choice saved. Tap Grant permissions and start probe to apply.");
         });
         layout.addView(carInput);
         CheckBox placeGate = new CheckBox(this);
@@ -269,7 +269,7 @@ public class MainActivity extends Activity {
                 + WakeService.systemRecognitionAvailable(this)
                 + "\nCommand language: " + commandLanguage()
                 + "\nMicrophone selection: " + (getSharedPreferences("probe", MODE_PRIVATE).getBoolean("carInput", false)
-                        ? "car Bluetooth; local English command recognition" : "phone")
+                        ? "phone for Hey Sally; car Bluetooth for each conversation (local English commands); music stereo between conversations" : "phone")
                 + "\nListening places: " + (getSharedPreferences("probe", MODE_PRIVATE).getBoolean("placeGate", false)
                         ? "Wi-Fi or Bluetooth audio only" : "anywhere")
                 + (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED

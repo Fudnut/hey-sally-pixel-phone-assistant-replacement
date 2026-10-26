@@ -102,7 +102,10 @@ public class PlaceGateCheck {
 
         android.content.SharedPreferences.carInput = true;
         service = start(true, false, false);
-        check(WakeMicrophone.lastCar && listening(), "Car-microphone mode must not be gated: it already needs the car");
+        check(!listening() && !WakeMicrophone.lastCar && DiagnosticHistory.events.contains("PLACE_PAUSED"),
+                "Car-conversation mode waits for Hey Sally on the phone microphone, so it is gated like phone mode");
+        PlaceMonitor.last.set(false, true);
+        check(listening() && !WakeMicrophone.lastCar, "Car Bluetooth audio must reopen phone wake listening");
         service.onDestroy();
         android.content.SharedPreferences.carInput = false;
         android.content.SharedPreferences.placeGate = false;
