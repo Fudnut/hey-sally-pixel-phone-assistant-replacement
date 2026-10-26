@@ -113,6 +113,10 @@ Wake capture requests Android's privacy-sensitive microphone mode to reduce inte
 - Up to 1,024 diagnostic events remain in app-private storage. They contain timestamps, command categories, counts and outcomes, not playlist names, Spotify URIs or recognized words. Routine non-matching wake results are counted in five-minute summaries, which may be delayed by Android sleep; a partial summary is saved when the service stops. These counts may reveal nearby speech/noise activity. Accepted wakes, debounce rejections, timing and lock/screen states still reveal usage patterns.
 - **Copy diagnostic history** puts that history on the clipboard for voluntary sharing. Review it before posting publicly. **Start fresh diagnostic trial** clears the previous timeline; copy it first if needed. Clearing app storage or uninstalling deletes it.
 
+## In development: car microphone
+
+**Not in the alpha.7 APK.** An experimental mode on the `feature/car-audio-probe` branch lets Sally hear you through a car's Bluetooth hands-free microphone instead of the phone's. In parked trials on 22 October 2026 with a Pixel 8 Pro and a 2009 Mitsubishi Pajero, Sally captured audio from the car's microphone, replied through the car speakers, and kept music quiet while you spoke. Hey Sally followed by PAUSE and NEXT worked, including with the phone's screen off. Listening through the car microphone all the time had one problem: it held the car's hands-free channel open, so Spotify played in mono telephone quality until Sally stopped. The planned design, not yet built, wakes on the phone's microphone, uses the car microphone and speakers only for the conversation, then returns music to stereo. Other cars and longer drives are untested.
+
 ## Roadmap: toward an Assistant replacement
 
 Hey Sally began as a hands-free Spotify controller. The longer-term aim is a small, reliable, rule-based replacement for the parts of Google Assistant that people use most, working from a locked phone and over a car's Bluetooth connection. **Nothing below is built, scheduled or promised.** Each item needs its own permissions, privacy notes and device testing, and the order is not final.
