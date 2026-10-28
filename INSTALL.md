@@ -1,13 +1,13 @@
-# Install and test Hey Sally 0.2.1-alpha.7
+# Install and test Hey Sally 0.2.1-alpha.8
 
 This is an experimental, precompiled Android APK. You do not need Android Studio, a compiler or a USB cable to install it. The app appears on your phone as **Spotify Wake Probe**; its wake phrase is **Hey Sally**.
 
 ## Download
 
-- [Download the ARM64 APK](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.7/Hey-Sally-0.2.1-alpha.7-arm64.apk)
-- [Release notes and all assets](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/tag/v0.2.1-alpha.7)
-- [Project source and build instructions](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.7/Hey-Sally-0.2.1-alpha.7-source.zip)
-- [APK/asset checksums](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.7/SHA256SUMS.txt)
+- [Download the ARM64 APK](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.8/Hey-Sally-0.2.1-alpha.8-arm64.apk)
+- [Release notes and all assets](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/tag/v0.2.1-alpha.8)
+- [Project source and build instructions](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.8/Hey-Sally-0.2.1-alpha.8-source.zip)
+- [APK/asset checksums](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/releases/download/v0.2.1-alpha.8/SHA256SUMS.txt)
 
 Choose the `.apk` asset, not GitHub's source-code ZIP. Requires an **ARM64 phone on Android 14 or later**, Spotify installed, and Spotify Developer access. Device testing so far is limited to a Pixel 8 Pro on Android 17; other phones, battery use and long-term reliability are not established.
 
@@ -22,7 +22,7 @@ Choose the `.apk` asset, not GitHub's source-code ZIP. Requires an **ARM64 phone
 Optional checksum check on a computer:
 
 ```powershell
-Get-FileHash ./Hey-Sally-0.2.1-alpha.7-arm64.apk -Algorithm SHA256
+Get-FileHash ./Hey-Sally-0.2.1-alpha.8-arm64.apk -Algorithm SHA256
 ```
 
 Compare with `SHA256SUMS.txt` from the same release. The APK is signed with a dedicated public-release certificate, new in alpha.7 (see [RELEASE_SIGNING.md](RELEASE_SIGNING.md)). If you installed alpha.6 or earlier, uninstall it before installing alpha.7; this clears Sally's settings and Spotify authorization. Future releases should use the alpha.7 certificate.
@@ -55,21 +55,21 @@ The microphone indicator stays visible because hands-free wake uses continuous l
 
 ## 4. Use it
 
-For every command, say **Hey Sally**, **wait for the beep**, then speak the command. The beep means the app is ready to listen; it is not confirmation of successful playback.
+For every command, say **Hey Sally**, **wait for Sally to say "Yes"**, then speak the command. "Yes" (or a beep, if speech is unavailable) means the app is ready to listen; it is not confirmation of successful playback.
 
 | What you want | Full voice sequence |
 | --- | --- |
-| Start/resume existing music | **Hey Sally** → beep → **resume** |
-| Pause | **Hey Sally** → beep → **pause** |
-| Next track | **Hey Sally** → beep → **next song** |
-| Previous track | **Hey Sally** → beep → **previous song** |
-| Named song | **Hey Sally** → beep → **play song Stand by Me** |
-| Named artist | **Hey Sally** → beep → **play artist The Beatles** |
-| Saved playlist | **Hey Sally** → beep → **play my playlist followed by its name** |
-| Hear numbered playlists | **Hey Sally** → beep → **list my playlists** |
-| Select one you heard | **Hey Sally** → beep → **play two** |
-| More playlist names | **Hey Sally** → beep → **more playlists** |
-| Liked Songs / DJ / Mix | **Hey Sally** → beep → **play Liked Songs**, **play DJ** or **play Daily Mix two** |
+| Start/resume existing music | **Hey Sally** → "Yes" → **resume** |
+| Pause | **Hey Sally** → "Yes" → **pause** |
+| Next track | **Hey Sally** → "Yes" → **next song** |
+| Previous track | **Hey Sally** → "Yes" → **previous song** |
+| Named song | **Hey Sally** → "Yes" → **play song Stand by Me** |
+| Named artist | **Hey Sally** → "Yes" → **play artist The Beatles** |
+| Saved playlist | **Hey Sally** → "Yes" → **play my playlist followed by its name** |
+| Hear numbered playlists | **Hey Sally** → "Yes" → **list my playlists** |
+| Select one you heard | **Hey Sally** → "Yes" → **play two** |
+| More playlist names | **Hey Sally** → "Yes" → **more playlists** |
+| Liked Songs / DJ / Mix | **Hey Sally** → "Yes" → **play Liked Songs**, **play DJ** or **play Daily Mix two** |
 
 If Spotify was paused, **next song** does not explicitly start it; use **resume** first. If there is no music context to resume, start a song/playlist in Spotify or request named music. Wait for a spoken reply to finish before the next wake. Playlist numbers expire after three minutes.
 
@@ -77,9 +77,9 @@ See [all commands, alternate forms and limitations](TESTING_AND_DISTRIBUTION.md#
 
 ## 5. Test and report a bug
 
-Test while stationary. Confirm actual audible results, first with the screen on and then locked/screen off. Note whether music was playing, your audio route, repeated wake attempts, unwanted beeps and spoken failures. One repeated Hey Sally wake has already been reported; no overall success rate is established.
+Test while stationary. Confirm actual audible results, first with the screen on and then locked/screen off. Note whether music was playing, your audio route, repeated wake attempts, unwanted cues or beeps and spoken failures. One repeated Hey Sally wake has already been reported; no overall success rate is established.
 
-Open [GitHub Issues](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/issues). Include version **0.2.1-alpha.7**, phone/Android/Spotify versions, command language, lock/screen state, phone/Bluetooth output, steps, expected/actual result and approximate time with timezone.
+Open [GitHub Issues](https://github.com/Fudnut/hey-sally-pixel-phone-assistant-replacement/issues). Include version **0.2.1-alpha.8**, phone/Android/Spotify versions, command language, lock/screen state, phone/Bluetooth output, steps, expected/actual result and approximate time with timezone.
 
 In the app, tap **Refresh status** then **Copy diagnostic history**. Paste into a private note and review before sharing only relevant events. Do not post passwords, tokens, account emails or full ADB logs. The log holds the newest 1,024 events; **Start fresh diagnostic trial** clears prior history. Save it first if needed.
 
@@ -91,7 +91,7 @@ Tap **Stop probe** to stop microphone listening. Select your previous digital as
 
 ## Privacy and prerelease status
 
-This alpha.7 release uses GPL version 3 only with a limited permission for its independently licensed libraries; see [LICENSE](LICENSE) and [LINKING_EXCEPTION.md](LINKING_EXCEPTION.md). The release includes the project source and build scripts.
+This alpha.8 release uses GPL version 3 only with a limited permission for its independently licensed libraries; see [LICENSE](LICENSE) and [LINKING_EXCEPTION.md](LINKING_EXCEPTION.md). The release includes the project source and build scripts.
 
 Wake recognition runs locally with Vosk. App-owned code does not save audio/transcripts. Commands may use the configured Android speech provider online, spoken playlist names go to the TTS engine, and music searches/authorization go to Spotify. Tokens are encrypted using Android Keystore. There is no Gemini integration or hosted AI backend.
 

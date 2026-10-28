@@ -1,6 +1,6 @@
 # Hey Sally: installation, commands, testing and GitHub distribution
 
-Updated 26 October 2026. App version: `0.2.1-alpha.7` (`versionCode 9`).
+Updated 28 October 2026. App version: `0.2.1-alpha.8` (`versionCode 10`).
 
 ## Overview
 
@@ -8,7 +8,7 @@ Say **Hey Sally**, wait for the ready beep, then speak one Spotify command. Use 
 
 The Android app is still called **Spotify Wake Probe** and uses package `com.steve.spotifywakeprobe`. Hey Sally is the current wake phrase; Hey Spotify is no longer accepted by the exact text matcher. This remains an experimental Spotify controller, not a general phone assistant or an official Spotify product.
 
-The source is public, Issues are enabled, and contributions can be proposed now. A maintainer-signed **0.2.1-alpha.7** limited-test prerelease APK is offered with [phone installation instructions](INSTALL.md).
+The source is public, Issues are enabled, and contributions can be proposed now. A maintainer-signed **0.2.1-alpha.8** limited-test prerelease APK is offered with [phone installation instructions](INSTALL.md).
 
 The user confirmed Hey Sally activation, audible resume and audible next-song playback on 10 October. One next-song test needed the wake phrase twice. Those short results do not establish long-duration reliability; the screen/lock state was not separately confirmed in that follow-up. These observations do not validate the exact published APK.
 
@@ -199,12 +199,12 @@ No contributor receives direct write access merely by submitting a PR. Maintaine
 
 ## GitHub prerelease status
 
-The limited-test APK is **0.2.1-alpha.7**, signed with a dedicated public-release certificate. [INSTALL.md](INSTALL.md) is the phone-first download/setup guide; [RELEASE_SIGNING.md](RELEASE_SIGNING.md) identifies the public certificate and update policy.
+The limited-test APK is **0.2.1-alpha.8**, signed with a dedicated public-release certificate. [INSTALL.md](INSTALL.md) is the phone-first download/setup guide; [RELEASE_SIGNING.md](RELEASE_SIGNING.md) identifies the public certificate and update policy.
 
 | Item | State for this alpha |
 | --- | --- |
 | Public source and collaboration | Public repository, Issues enabled, bug-report and PR templates supplied. Forks and PRs are welcome. |
-| APK | Non-debuggable ARM64 release build, Android 14+, versionCode 9; signature and alignment verified. |
+| APK | Non-debuggable ARM64 release build, Android 14+, versionCode 10; signature and alignment verified. |
 | Signing | Dedicated release key kept locally outside Git; public certificate fingerprint supplied for Spotify setup. Maintainer must retain a recoverable key/credential backup for future updates. |
 | Dependency notices | Full fetched licence/notice texts embedded in assets and supplied in a notices ZIP. Runtime/native inventory and provenance documented in THIRD_PARTY_NOTICES.md. |
 | Downloads | Versioned APK, checksums, notices, GPL text/linking permission, project source and install guide are prerelease assets. Source-code ZIPs are not installable APKs. |

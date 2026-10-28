@@ -12,7 +12,9 @@ import android.os.SystemClock;
 import java.time.Instant;
 
 final class DiagnosticHistory {
-    static final int MAX_ENTRIES = 1024;
+    static final int MAX_ENTRIES = 4096;
+    // The setup screen shows the newest part; Copy diagnostic history includes every stored event.
+    static final int SHOWN_ENTRIES = 1024;
     private static final String PREFS = "diagnostics";
     private static final String KEY = "events";
     private static final WakeResults WAKE_RESULTS = new WakeResults(SystemClock.elapsedRealtime());
@@ -55,6 +57,12 @@ final class DiagnosticHistory {
     static synchronized String read(Context context) {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .getString(KEY, "No diagnostic events yet.\n");
+    }
+
+    static String latest(String history, int count) {
+        String[] lines = history.split("\n");
+        if (lines.length <= count) return history;
+        return String.join("\n", java.util.Arrays.copyOfRange(lines, lines.length - count, lines.length)) + "\n";
     }
 
     static String append(String current, String entry) {

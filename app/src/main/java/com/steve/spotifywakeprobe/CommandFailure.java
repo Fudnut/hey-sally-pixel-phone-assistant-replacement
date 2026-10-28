@@ -11,7 +11,7 @@ import java.util.NoSuchElementException;
 
 /** Safe diagnostic categories and setup detail; never copy exception messages. */
 final class CommandFailure {
-    enum Reason { AUTH, TIMEOUT, NETWORK, NO_MATCH, REMOTE }
+    enum Reason { AUTH, TIMEOUT, NETWORK, NO_MATCH, REMOTE, NO_INTERNET }
     enum SetupReason { DECLINED, STATE_MISMATCH, CALLBACK }
     static final class SetupException extends SecurityException {
         final SetupReason reason;
@@ -67,6 +67,7 @@ final class CommandFailure {
             case TIMEOUT: return "Spotify took too long to respond. Try again.";
             case NETWORK: return "I couldn't reach Spotify. Check your connection.";
             case NO_MATCH: return "I couldn't find that on Spotify.";
+            case NO_INTERNET: return "Spotify didn't respond. The phone's internet connection isn't working.";
             default: return "I couldn't do that. Check Spotify and try again.";
         }
     }

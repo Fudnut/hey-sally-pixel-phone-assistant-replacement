@@ -99,6 +99,15 @@ public class PlaceGateCheck {
         service.onStartCommand(null, 0, 2);
         check(monitor.closed && listening(), "Turning the setting off while paused must resume listening");
         service.onDestroy();
+
+        android.content.SharedPreferences.carInput = true;
+        service = start(true, false, false);
+        check(!listening() && !WakeMicrophone.lastCar && DiagnosticHistory.events.contains("PLACE_PAUSED"),
+                "Car-conversation mode waits for Hey Sally on the phone microphone, so it is gated like phone mode");
+        PlaceMonitor.last.set(false, true);
+        check(listening() && !WakeMicrophone.lastCar, "Car Bluetooth audio must reopen phone wake listening");
+        service.onDestroy();
+        android.content.SharedPreferences.carInput = false;
         android.content.SharedPreferences.placeGate = false;
         System.out.println("Place gate: start-up pause, Wi-Fi/Bluetooth resume, grace period, handover, command completion, call recovery and stop checks passed");
     }

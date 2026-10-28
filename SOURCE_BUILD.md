@@ -1,4 +1,4 @@
-# Build the alpha.7 project source
+# Build the alpha.8 project source
 
 The release source ZIP contains the exact tracked project tree at the APK's embedded Git revision, plus this build guide and release provenance. Hey Sally is GPL-3.0-only with the limited additional permission in LINKING_EXCEPTION.md. Included independent libraries retain their licences; licence texts are in app/src/main/assets/third-party.
 
@@ -10,5 +10,7 @@ Requirements: Git, PowerShell, Python 3 for the controller check, JDK 17 or a ne
 4. Run `./tests/check-playlists.ps1`, `python -X utf8 ./tests/check-controller.py`, and `python -X utf8 ./tests/check-call-interruption.py`. The call check runs the real listener service with simulated Android boundaries; it does not place calls or verify Bluetooth audio.
 5. Run `./gradlew.bat :app:assembleRelease :app:lintRelease`. The unsigned APK is app/build/outputs/apk/release/app-release-unsigned.apk. `--offline` requires an already populated cache.
 6. To install your own build, align/sign it with your own key using Android's tools, or build `:app:assembleDebug` for standard debug signing. The maintainer's private signing key is not part of Corresponding Source. A differently signed build cannot update an existing public/private installation under the same package; preserve diagnostics and deliberately plan any migration.
+
+Debug builds include the optional [car microphone diagnostic](docs/CAR_AUDIO_CHECK.md). Its local checks are `./tests/check-car-audio.ps1` and `python -X utf8 ./tests/check-car-audio-android.py`. Release builds omit the diagnostic Activity/classes. The optional production car-input path uses the normal MODIFY_AUDIO_SETTINGS permission in both build types. Its checks are `python -X utf8 ./tests/check-car-voice.py`, `python -X utf8 ./tests/check-car-voice-android.py`, and `python -X utf8 ./tests/check-call-interruption.py`. Platform doubles establish lifecycle/source gates; actual wake/command quality requires the parked [car voice trial](docs/CAR_VOICE_TRIAL.md).
 
 The limited linking permission covers the listed independent precompiled libraries; it does not remove GPL source obligations for Hey Sally's own changes. The source ZIP includes project Java, resources, Gradle/build/download/test scripts, wrapper and notices; no private keys, credentials, private audit logs or APKs are included. Third-party binary input hashes and runtime versions are recorded in the release source provenance. Spotify account authorization is needed to use the app, not to compile it.

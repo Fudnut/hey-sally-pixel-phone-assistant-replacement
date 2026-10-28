@@ -51,6 +51,14 @@ public class MainActivity extends Activity {
         layout.setPadding(32, 32, 32, 32);
         status = new TextView(this);
         layout.addView(status);
+        CheckBox carInput = new CheckBox(this);
+        carInput.setText("Car conversations: Hey Sally on the phone microphone, then the car microphone and speakers (tap Start to apply)");
+        carInput.setChecked(getSharedPreferences("probe", MODE_PRIVATE).getBoolean("carInput", false));
+        carInput.setOnCheckedChangeListener((button, checked) -> {
+            getSharedPreferences("probe", MODE_PRIVATE).edit().putBoolean("carInput", checked).apply();
+            showMessage("Car conversation choice saved. Tap Grant permissions and start probe to apply.");
+        });
+        layout.addView(carInput);
         CheckBox placeGate = new CheckBox(this);
         placeGate.setText("Only listen on Wi-Fi or with Bluetooth audio connected (tap Start to apply)");
         placeGate.setChecked(getSharedPreferences("probe", MODE_PRIVATE).getBoolean("placeGate", false));
@@ -260,6 +268,8 @@ public class MainActivity extends Activity {
                 + "\nSystem command recognition: "
                 + WakeService.systemRecognitionAvailable(this)
                 + "\nCommand language: " + commandLanguage()
+                + "\nMicrophone selection: " + (getSharedPreferences("probe", MODE_PRIVATE).getBoolean("carInput", false)
+                        ? "phone for Hey Sally; car Bluetooth for each conversation (local English commands); music stereo between conversations" : "phone")
                 + "\nListening places: " + (getSharedPreferences("probe", MODE_PRIVATE).getBoolean("placeGate", false)
                         ? "Wi-Fi or Bluetooth audio only" : "anywhere")
                 + (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
@@ -269,12 +279,13 @@ public class MainActivity extends Activity {
                         ? "" : "\nNotifications disabled: enable them in Android app settings for listener status and failure alerts.")
                 + "\nLast wake: " + last + "\nLast command: " + lastCommand
                 + "\nLast attempt: " + lastAttempt
-                + "\n\nAfter setup, lock the phone, say 'Hey Sally', wait for the beep, then say a command. "
+                + "\n\nAfter setup, lock the phone, say 'Hey Sally', wait for Sally to say Yes (or beep), then say a command. "
                 + "Try 'pause', 'resume', 'next', 'previous', 'open Spotify', or 'play song/artist/playlist ...'."
                 + "\nSay 'list my playlists' to hear five numbered names. After the reply, use 'Hey Sally' again, "
                 + "then 'play two' or 'more playlists'. Numbers expire three minutes after the last page. "
                 + "Wait until the spoken reply finishes before speaking.");
-        history.setText("\nDiagnostic history (latest " + DiagnosticHistory.MAX_ENTRIES
-                + " events):\n" + DiagnosticHistory.read(this));
+        history.setText("\nDiagnostic history (latest " + DiagnosticHistory.SHOWN_ENTRIES + " of up to "
+                + DiagnosticHistory.MAX_ENTRIES + " stored events; Copy includes all):\n"
+                + DiagnosticHistory.latest(DiagnosticHistory.read(this), DiagnosticHistory.SHOWN_ENTRIES));
     }
 }
