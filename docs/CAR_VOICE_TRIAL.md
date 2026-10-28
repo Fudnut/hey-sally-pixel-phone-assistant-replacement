@@ -49,8 +49,8 @@ Contacts, SMS announcement/reading and emergency-number behavior remain subseque
 The saved car setting (main screen: **Car conversations: Hey Sally on the phone microphone, then the car microphone and speakers**) now selects this split mode. Continuous car capture is no longer offered.
 
 - **Between conversations** Sally listens for Hey Sally on the phone's own microphone. It makes no hands-free route request, so music should stay stereo. Place-based listening gates this phone wake like normal phone mode.
-- **On an accepted Hey Sally** Sally pauses music, fully closes the phone recorder, requests the car's hands-free route and opens one recorder that requires Bluetooth input. The ready beep and command acceptance wait for actual Bluetooth input. The route has 10 seconds to deliver it; commands have 20 seconds after the beep; the whole conversation is bounded at 90 seconds. There is no phone-microphone fallback for the command.
-- That one car recorder is kept through the beep, the command and any spoken reply ("I didn't catch that", playlist readout).
+- **On an accepted Hey Sally** Sally pauses music, fully closes the phone recorder, requests the car's hands-free route and opens one recorder that requires Bluetooth input. The spoken "Yes" (or the fallback beep) and command acceptance wait for actual Bluetooth input. The route has 10 seconds to deliver it; commands have 20 seconds after "Yes"; the whole conversation is bounded at 90 seconds. There is no phone-microphone fallback for the command.
+- That one car recorder is kept through "Yes", the command and any spoken reply ("I didn't catch that", playlist readout).
 - **When the conversation ends** Sally closes car capture, then releases the route, then reopens phone wake, then hands focus to Spotify, so music should resume in stereo. A late Spotify failure, arriving after the route is released, is recorded on the notification and in diagnostics but not spoken: a car reply needs the car route, and the handset is never used.
 - Calls, route loss, focus loss, recorder failure, timeouts and a missing car route all end the car conversation and return to phone wake. Real calls still pause media and are never followed by an explicit Spotify resume.
 
@@ -58,8 +58,8 @@ The saved car setting (main screen: **Car conversations: Hey Sally on the phone 
 
 1. Park with the Pixel paired to the Pajero and Spotify playing at normal volume. Confirm the car setting is ticked on Sally's main screen and tap **Grant permissions and start probe** once. The status should read "phone for Hey Sally; car Bluetooth for each conversation".
 2. **Idle stereo:** listen for a minute. Music should be normal stereo, not the telephone/mono sound.
-3. With the phone in its usual position, say **Hey Sally** at normal seated volume over the music. Music should go quiet, then the readiness beep should come from the car speakers (allow a second or two for the car's hands-free channel).
-4. After the beep, say **next**. Music should stay quiet while you speak; the track should change, and music should return in **stereo**.
+3. With the phone in its usual position, say **Hey Sally** at normal seated volume over the music. Music should go quiet, then Sally should say "Yes" through the car speakers (allow a second or two for the car's hands-free channel).
+4. After "Yes", say **next**. Music should stay quiet while you speak; the track should change, and music should return in **stereo**.
 5. Repeat with **pause**, then Hey Sally and **resume**.
 6. Say Hey Sally, then stay silent. After about 20 seconds Sally should say "I didn't catch that" through the car speakers; music should then return in stereo.
 7. Turn the phone screen off and repeat steps 3–4.

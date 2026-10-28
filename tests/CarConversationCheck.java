@@ -35,9 +35,13 @@ public class CarConversationCheck {
         AndroidCarAudioSession.last = null;
         DiagnosticHistory.events.clear();
         android.content.SharedPreferences.carInput = true;
+        TextToSpeech.autoInit = true;
+        TextToSpeech.autoSpeak = true;
+        TextToSpeech.cues.clear();
         WakeService service = new WakeService();
         service.phonePermission = permission;
         service.onStartCommand(null, 0, 1);
+        Handler.advance(0);
         return service;
     }
     private static Object invoke(WakeService service, String name, Class<?>[] types, Object... args) throws Exception {
@@ -95,16 +99,18 @@ public class CarConversationCheck {
                 "The car route must be requested and one required-Bluetooth command recorder opened");
         check(service.audio.focusRequests == 1 && !focusFree(service),
                 "Music must stay paused through the route transition");
-        check(ToneGenerator.beeps == 0 && !DiagnosticHistory.events.contains("COMMAND_READY CAR_LOCAL"),
-                "No ready beep before the car recorder delivers actual Bluetooth input");
+        check(ToneGenerator.beeps == 0 && TextToSpeech.cues.isEmpty() && !DiagnosticHistory.events.contains("COMMAND_READY CAR_LOCAL"),
+                "No ready cue before the car recorder delivers actual Bluetooth input");
         say(car, "next");
         command(service);
         check(SpotifyController.dispatched == 0 && SpeechRecognizer.starts == 0,
                 "No command may be accepted, or taken from another microphone, before actual Bluetooth input");
 
         car.input(true);
-        check(ToneGenerator.beeps == 1 && DiagnosticHistory.events.contains("COMMAND_READY CAR_LOCAL"),
-                "Verified Bluetooth input must give one ready beep");
+        check(TextToSpeech.cues.equals(List.of("Yes")) && ToneGenerator.beeps == 0
+                        && TextToSpeech.cueUsage == android.media.AudioAttributes.USAGE_VOICE_COMMUNICATION
+                        && DiagnosticHistory.events.contains("COMMAND_READY CAR_LOCAL"),
+                "Verified Bluetooth input must give one spoken Yes on the car's hands-free channel");
         WakeMicrophone.trace.clear();
         say(car, "next");
         check(SpotifyController.dispatched == 1 && SpotifyController.cancelled == 0,
@@ -145,12 +151,13 @@ public class CarConversationCheck {
         check(car.isClosed && stereo(service) && phoneWake() && focusFree(service),
                 "After the reply, the conversation must end and phone wake resume");
 
-        int beeps = ToneGenerator.beeps;
+        int beeps = ToneGenerator.beeps, cues = TextToSpeech.cues.size();
         car = wake(service);
         Handler.advance(9999);
         check(!car.isClosed, "The car route has 10 seconds to deliver input");
         Handler.advance(1);
-        check(car.isClosed && stereo(service) && ToneGenerator.beeps == beeps && SpeechRecognizer.starts == 0
+        check(car.isClosed && stereo(service) && ToneGenerator.beeps == beeps && TextToSpeech.cues.size() == cues
+                        && SpeechRecognizer.starts == 0
                         && focusFree(service) && WakeMicrophone.opened == WakeMicrophone.closed,
                 "Connection timeout must end the conversation with no beep and no phone-microphone command");
         Handler.advance(1000);
@@ -307,6 +314,39 @@ public class CarConversationCheck {
         service.onDestroy();
         android.content.SharedPreferences.placeGate = false;
         PlaceMonitor.bluetooth = false;
+
+        // The car cue: decoding is held while Sally says Yes, on the same recorder.
+        TextToSpeech.autoSpeak = false;
+        service = start(true);
+        TextToSpeech.autoSpeak = false;
+        car = wake(service);
+        car.input(true);
+        check(TextToSpeech.cues.size() == 1 && car.listener == null && !car.isClosed
+                        && !DiagnosticHistory.events.contains("COMMAND_READY CAR_LOCAL"),
+                "While Yes plays, the car recorder stays open but nothing is decoded");
+        TextToSpeech.cueSpeaker.progress.onDone(TextToSpeech.cueId);
+        check(car.listener != null && car.command && WakeMicrophone.opened == WakeMicrophone.closed + 1
+                        && DiagnosticHistory.events.contains("COMMAND_READY CAR_LOCAL"),
+                "After Yes, the same car recorder listens for the command");
+        say(car, "next");
+        check(SpotifyController.dispatched == 1 && stereo(service), "The command after the cue must complete normally");
+
+        car = wake(service);
+        car.input(true);
+        Handler.advance(1500);
+        check(ToneGenerator.beeps == 1 && ToneGenerator.lastStream == android.media.AudioManager.STREAM_VOICE_CALL
+                        && car.listener != null, "A slow car cue falls back to the beep on the hands-free channel, then listens");
+        say(car, "next");
+
+        car = wake(service);
+        car.input(true);
+        car.input(false);
+        TextToSpeech.cueSpeaker.progress.onDone(TextToSpeech.cueId);
+        Handler.advance(2000);
+        check(car.listener == null && car.isClosed && phoneWake() && service.stopsSelf == 0 && ToneGenerator.beeps == 1,
+                "Route loss during the cue must cancel it and recover to phone wake");
+        service.onDestroy();
+        TextToSpeech.autoSpeak = true;
 
         WakeMicrophone.holdBluetooth = false;
         android.content.SharedPreferences.carInput = false;

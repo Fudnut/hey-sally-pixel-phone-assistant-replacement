@@ -222,9 +222,12 @@ final class SpotifyController {
         long startedAt = SystemClock.elapsedRealtime();
         Runnable timeout = () -> {
             if (connecting.compareAndSet(true, false) && finished.compareAndSet(false, true)) {
-                connectionStatus(context, startedAt, showAuthorization, "TIMEOUT");
+                connectionStatus(context, startedAt, showAuthorization, "TIMEOUT", "");
                 Log.w("SpotifyWakeProbe", "SPOTIFY_CONNECT_TIMEOUT");
-                report.accept(CommandFailure.report(CommandFailure.Reason.TIMEOUT));
+                // A connected but unvalidated network (for example a stalled mobile link) is the likely
+                // cause; with no network at all App Remote still works offline, so keep the plain timeout.
+                report.accept(CommandFailure.report(NetworkSnapshot.unvalidated(context)
+                        ? CommandFailure.Reason.NO_INTERNET : CommandFailure.Reason.TIMEOUT));
             }
         };
         // Manual authorization needs time for consent; ordinary playback fails promptly.
@@ -233,12 +236,12 @@ final class SpotifyController {
             @Override public void onConnected(SpotifyAppRemote remote) {
                 main.post(() -> {
                     if (!connecting.compareAndSet(true, false) || finished.get()) {
-                        connectionStatus(context, startedAt, showAuthorization, "IGNORED");
+                        connectionStatus(context, startedAt, showAuthorization, "IGNORED", "");
                         SpotifyAppRemote.disconnect(remote);
                         return;
                     }
                     main.removeCallbacks(timeout);
-                    connectionStatus(context, startedAt, showAuthorization, "CONNECTED");
+                    connectionStatus(context, startedAt, showAuthorization, "CONNECTED", "");
                     try { ready.accept(remote); }
                     catch (RuntimeException error) {
                         SpotifyAppRemote.disconnect(remote);
@@ -251,7 +254,10 @@ final class SpotifyController {
                     connecting.set(false);
                     main.removeCallbacks(timeout);
                     if (!finished.compareAndSet(false, true)) return;
-                    connectionStatus(context, startedAt, showAuthorization, "ERROR");
+                    // The exception class only; its message can contain account or device details.
+                    String type = error.getClass().getSimpleName();
+                    connectionStatus(context, startedAt, showAuthorization, "ERROR",
+                            " error=" + (type.isEmpty() ? error.getClass().getName() : type));
                     Log.e("SpotifyWakeProbe", "SPOTIFY_CONNECT_ERROR");
                     report.accept(CommandFailure.report(CommandFailure.reason(error)));
                 });
@@ -261,12 +267,13 @@ final class SpotifyController {
         catch (RuntimeException error) { listener.onFailure(error); }
     }
 
-    private static void connectionStatus(Context context, long startedAt, boolean authorization, String outcome) {
+    private static void connectionStatus(Context context, long startedAt, boolean authorization, String outcome,
+                                         String detail) {
         String event = "SPOTIFY_CONNECT_RESULT " + outcome + " ms="
                 + Math.max(0, SystemClock.elapsedRealtime() - startedAt)
-                + " mode=" + (authorization ? "AUTH" : "PLAYBACK");
+                + " mode=" + (authorization ? "AUTH" : "PLAYBACK") + detail;
         Log.i("SpotifyWakeProbe", event);
-        DiagnosticHistory.record(context, event);
+        DiagnosticHistory.record(context, event + NetworkSnapshot.describe(context));
     }
 
     private static String resolve(Context context, String clientId, VoiceCommand command,

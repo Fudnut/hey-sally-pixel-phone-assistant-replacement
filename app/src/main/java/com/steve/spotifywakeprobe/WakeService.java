@@ -20,7 +20,6 @@ import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
-import android.media.ToneGenerator;
 import android.os.IBinder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -93,6 +92,7 @@ public class WakeService extends Service {
     private boolean feedbackReply;
     private String replyLabel;
     private TextToSpeech spokenReply;
+    private ReadyCue cue;
     private Runnable replyTimeout;
     private Thread playlistFetch;
     private Runnable cancelOrdinaryPlayback;
@@ -152,6 +152,8 @@ public class WakeService extends Service {
             handler.postDelayed(heartbeat, HEARTBEAT_INTERVAL_MS);
             handler.postDelayed(wakeSummary, WAKE_SUMMARY_INTERVAL_MS);
         }
+        // Warm the spoken ready cue once, so "Yes" is not delayed by engine start-up.
+        if (cue == null) cue = new ReadyCue(this);
         boolean nextCarInput = getSharedPreferences("probe", MODE_PRIVATE).getBoolean("carInput", false);
         boolean inputChanged = carConversations != nextCarInput;
         if (inputChanged) {
@@ -278,6 +280,7 @@ public class WakeService extends Service {
     private void suspendRecognition(boolean retainCarRecorder) {
         generation++;
         awaitingCommand = false;
+        if (cue != null) cue.cancel();
         if (wakeMicrophone != null) {
             if (retainCarRecorder && carAudio != null) wakeMicrophone.pause();
             else { wakeMicrophone.close(); wakeMicrophone = null; }
@@ -459,10 +462,6 @@ public class WakeService extends Service {
         lastCommandHypothesis = "";
         partialCandidate = "";
         int current = generation;
-        if (forCommand && !carConversations && systemRecognitionAvailable(this)) {
-            startDeviceCommand(current);
-            return;
-        }
         RecognitionListener listener = new RecognitionListener() {
             @Override public void onPartialResult(String hypothesis) { heard(current, hypothesis, "partial", false); }
             @Override public void onResult(String hypothesis) { heard(current, hypothesis, "text", false); }
@@ -481,6 +480,19 @@ public class WakeService extends Service {
                 }
             }
         };
+        if (forCommand && !car) {
+            // Say "Yes" before any recognizer opens, so it never hears Sally; its 20 s starts after.
+            boolean system = systemRecognitionAvailable(this);
+            cue.play(false, () -> {
+                if (current != generation || destroyed || (calls != null && calls.isCallActive())) return;
+                if (system) startDeviceCommand(current);
+                else {
+                    try { startVoskCommand(current, listener); }
+                    catch (IOException | RuntimeException error) { fail(error); }
+                }
+            });
+            return;
+        }
         if (!forCommand || car) {
             AndroidCarAudioSession owner = carAudio;
             if (wakeMicrophone == null) wakeMicrophone = new WakeMicrophone(this, model, car, forCommand,
@@ -492,10 +504,19 @@ public class WakeService extends Service {
                 if (current != generation || destroyed || (forCommand && !carReady())) return;
                 if (forCommand) {
                     if (carAudio != null) carAudio.session.beginConversation();
-                    commandReadyBeep();
-                    update("Heard Hey Sally; say a command");
-                    DiagnosticHistory.record(this, "COMMAND_READY CAR_LOCAL");
-                    Log.i(TAG, "COMMAND_READY CAR_LOCAL");
+                    // Hold decoding on the open car recorder while Sally says "Yes" on the hands-free
+                    // channel; the command phase, and its 20 s, start once the cue is done.
+                    WakeMicrophone microphone = wakeMicrophone;
+                    microphone.pause();
+                    cue.play(true, () -> {
+                        if (current != generation || destroyed || !carReady() || microphone != wakeMicrophone) return;
+                        microphone.resume(listener, () -> {
+                            if (current != generation || destroyed || !carReady()) return;
+                            update("Heard Hey Sally; say a command");
+                            DiagnosticHistory.record(this, "COMMAND_READY CAR_LOCAL");
+                            Log.i(TAG, "COMMAND_READY CAR_LOCAL");
+                        }, true);
+                    });
                     return;
                 }
                 listenReadyAt = SystemClock.elapsedRealtime();
@@ -507,6 +528,9 @@ public class WakeService extends Service {
             else wakeMicrophone.start(listener, ready);
             return;
         }
+    }
+
+    private void startVoskCommand(int current, RecognitionListener listener) throws IOException {
         recognizer = new Recognizer(model, 16000f);
         speech = new SpeechService(recognizer, 16000f);
         speech.startListening(listener, 20000);
@@ -519,20 +543,20 @@ public class WakeService extends Service {
             fail(new IllegalStateException("Vosk command window did not finish"));
         };
         handler.postDelayed(voskCommandTimeout, 25000);
-        commandReadyBeep();
         update("Heard Hey Sally; say a command");
         Log.i(TAG, "COMMAND_READY");
         DiagnosticHistory.record(this, "COMMAND_READY VOSK");
     }
 
     private void startDeviceCommand(int current) {
+        // Timing covers listening only, not the spoken cue before it.
+        commandStartedAt = SystemClock.elapsedRealtime();
         deviceCommand = SpeechRecognizer.createSpeechRecognizer(this);
         deviceCommand.setRecognitionListener(new android.speech.RecognitionListener() {
             @Override public void onReadyForSpeech(Bundle params) {
                 if (current != generation) return;
                 Log.i(TAG, "COMMAND_DEVICE_READY");
                 DiagnosticHistory.record(WakeService.this, "COMMAND_READY SYSTEM");
-                commandReadyBeep();
             }
             @Override public void onBeginningOfSpeech() {
                 if (current != generation) return;
@@ -698,17 +722,6 @@ public class WakeService extends Service {
         catch (Exception error) { fail(error); }
     }
 
-    private void commandReadyBeep() {
-        try {
-            ToneGenerator tone = new ToneGenerator(carAudio != null
-                    ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_NOTIFICATION, 80);
-            tone.startTone(ToneGenerator.TONE_PROP_BEEP, 120);
-            handler.postDelayed(tone::release, 200);
-        } catch (RuntimeException error) {
-            DiagnosticHistory.record(this, "COMMAND_BEEP_ERROR");
-        }
-    }
-
     private void recordCommandTiming(String stage) {
         long now = SystemClock.elapsedRealtime();
         DiagnosticHistory.record(this, "COMMAND_CAPTURE " + stage
@@ -735,7 +748,7 @@ public class WakeService extends Service {
         String commandLabel = command.kind + (command.kind == VoiceCommand.Kind.PLAY || command.kind == VoiceCommand.Kind.PLAY_SPECIAL
                 ? " " + command.type : "");
         Log.i(TAG, "COMMAND_HEARD " + commandLabel);
-        DiagnosticHistory.record(this, "COMMAND_HEARD " + commandLabel);
+        DiagnosticHistory.record(this, "COMMAND_HEARD " + commandLabel + NetworkSnapshot.describe(this));
         getSharedPreferences("probe", MODE_PRIVATE).edit()
                 .putString("lastCommand", Instant.now() + " " + commandLabel).apply();
         if ("normalized".equals(command.type))
@@ -896,10 +909,8 @@ public class WakeService extends Service {
             return;
         }
         try {
-            spokenReply.setAudioAttributes(new AudioAttributes.Builder()
-                        // Follow Spotify's media volume, including Bluetooth's per-route setting.
-                        .setUsage(carAudio != null ? AudioAttributes.USAGE_VOICE_COMMUNICATION : AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
+            // Follow Spotify's media volume, including Bluetooth's per-route setting.
+            spokenReply.setAudioAttributes(ReadyCue.replyAttributes(carAudio != null));
             spokenReply.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                     @Override public void onStart(String id) {
                         handler.post(() -> {
@@ -1049,6 +1060,7 @@ public class WakeService extends Service {
         if (focusLimit != null) handler.removeCallbacks(focusLimit);
         releaseAudioFocus();
         closeCarAudio();
+        if (cue != null) { cue.close(); cue = null; }
         closePlaces();
         if (calls != null) { calls.close(); calls = null; }
         if (model != null) { model.close(); model = null; }

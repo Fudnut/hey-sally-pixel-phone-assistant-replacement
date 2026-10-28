@@ -28,30 +28,44 @@ public class SpotifyAppRemote { public static Connector.ConnectionListener liste
 'com/steve/spotifywakeprobe/ConnectionCheck.java': '''package com.steve.spotifywakeprobe;
 import android.os.Handler; import android.util.Log; import com.spotify.android.appremote.api.*; import java.util.*; import java.util.concurrent.atomic.AtomicBoolean; import java.util.function.Consumer;
 public class ConnectionCheck {
- static int ready; static List<String> reports=new ArrayList<>(); static AtomicBoolean finished;
+ static int ready; static List<String> reports=new ArrayList<>(); static AtomicBoolean finished; static android.content.Context context;
+ static boolean has(String prefix){return DiagnosticHistory.events.stream().anyMatch(e->e.startsWith(prefix));}
  static void start(boolean authorize) throws Exception {
   Handler.reset(); ready=0; reports.clear(); finished=new AtomicBoolean(); SpotifyAppRemote.disconnected=0; Log.text=""; DiagnosticHistory.events.clear();
   var connect=SpotifyController.class.getDeclaredMethod("connect",android.content.Context.class,String.class,boolean.class,Consumer.class,Consumer.class,AtomicBoolean.class);
-  connect.setAccessible(true); connect.invoke(null,null,"test",authorize,(Consumer<SpotifyAppRemote>)r->ready++, (Consumer<String>)reports::add,finished);
+  connect.setAccessible(true); connect.invoke(null,context,"test",authorize,(Consumer<SpotifyAppRemote>)r->ready++, (Consumer<String>)reports::add,finished);
  }
  static void check(boolean ok,String message){if(!ok)throw new AssertionError(message);}
  public static void main(String[] args) throws Exception {
   start(false); Handler.advance(11999);check(reports.isEmpty(),"Connect timed out too early");Handler.advance(1);
   check(finished.get() && reports.size()==1,"Unresponsive playback connection must time out after 12 seconds");
-  check(DiagnosticHistory.events.contains("SPOTIFY_CONNECT_RESULT TIMEOUT ms=12000 mode=PLAYBACK"),"Timeout must retain safe elapsed time in phone diagnostics");
+  check(has("SPOTIFY_CONNECT_RESULT TIMEOUT ms=12000 mode=PLAYBACK net="),"Timeout must retain safe elapsed time in phone diagnostics");
   SpotifyAppRemote.listener.onConnected(new SpotifyAppRemote());check(ready==0 && SpotifyAppRemote.disconnected==1,"Late connection must disconnect without executing playback");
-  check(DiagnosticHistory.events.contains("SPOTIFY_CONNECT_RESULT IGNORED ms=12000 mode=PLAYBACK"),"Late connection must be measurable without executing playback");
+  check(has("SPOTIFY_CONNECT_RESULT IGNORED ms=12000 mode=PLAYBACK net="),"Late connection must be measurable without executing playback");
   SpotifyAppRemote.listener.onFailure(new IllegalStateException("private-error-text"));check(reports.size()==1,"Late failure must not report twice");
   start(false);SpotifyAppRemote.listener.onFailure(new com.spotify.android.appremote.api.error.UserNotAuthorizedException("private authorization details", null));check(CommandFailure.code(reports.get(0))==CommandFailure.Reason.AUTH,"SDK authorization error must retain safe AUTH code");
   start(false);Handler.advance(11000);SpotifyAppRemote.listener.onConnected(new SpotifyAppRemote());Handler.advance(1000);
   check(ready==1 && reports.isEmpty() && !finished.get(),"Successful connection must cancel its timer");
-  check(DiagnosticHistory.events.contains("SPOTIFY_CONNECT_RESULT CONNECTED ms=11000 mode=PLAYBACK"),"Successful connection duration must be recorded");
+  check(has("SPOTIFY_CONNECT_RESULT CONNECTED ms=11000 mode=PLAYBACK net="),"Successful connection duration must be recorded");
   finished.set(true);SpotifyAppRemote.listener.onFailure(new IllegalStateException("private-error-text"));check(reports.isEmpty(),"Completed command must suppress disconnect error");
   start(false);SpotifyAppRemote.listener.onFailure(new IllegalStateException("private-error-text"));Handler.advance(12000);
   check(finished.get() && reports.size()==1 && !reports.get(0).contains("private-error-text") && !Log.text.contains("private-error-text"),"Failure must be single and contain no error text");
+  check(has("SPOTIFY_CONNECT_RESULT ERROR ms=0 mode=PLAYBACK error=IllegalStateException net=")
+          && DiagnosticHistory.events.stream().noneMatch(e->e.contains("private-error-text")),"Connect failure must record its exception class, never its message");
+  context=new android.content.Context();android.net.ConnectivityManager.active=new android.net.Network();
+  var cellular=new android.net.NetworkCapabilities();cellular.transports.add(android.net.NetworkCapabilities.TRANSPORT_CELLULAR);
+  android.net.ConnectivityManager.capabilities=cellular;
+  start(false);Handler.advance(12000);
+  check(CommandFailure.code(reports.get(0))==CommandFailure.Reason.NO_INTERNET,"Timeout on a connected but unvalidated network must say the internet is not working");
+  check(has("SPOTIFY_CONNECT_RESULT TIMEOUT ms=12000 mode=PLAYBACK net=cellular validated=false metered=true signal="),"Connect results must record the network categories");
+  cellular.capabilities.add(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED);start(false);Handler.advance(12000);
+  check(CommandFailure.code(reports.get(0))==CommandFailure.Reason.TIMEOUT,"Timeout on a validated network keeps the ordinary timeout");
+  android.net.ConnectivityManager.active=null;start(false);Handler.advance(12000);
+  check(CommandFailure.code(reports.get(0))==CommandFailure.Reason.TIMEOUT&&has("SPOTIFY_CONNECT_RESULT TIMEOUT ms=12000 mode=PLAYBACK net=none"),"With no network at all, App Remote can still work offline: keep the ordinary timeout");
+  context=null;android.net.ConnectivityManager.capabilities=null;
   SpotifyAppRemote.failSynchronously=true;start(false);Handler.advance(12000);check(reports.size()==1,"Synchronous connection exception must report once");SpotifyAppRemote.failSynchronously=false;
   start(true);Handler.advance(12000);check(reports.isEmpty(),"Manual authorization must allow time for consent");Handler.advance(108000);check(reports.size()==1,"Manual authorization must still be bounded");
-  check(DiagnosticHistory.events.contains("SPOTIFY_CONNECT_RESULT TIMEOUT ms=120000 mode=AUTH"),"Consent timing must be separate from playback timing");
+  check(has("SPOTIFY_CONNECT_RESULT TIMEOUT ms=120000 mode=AUTH net="),"Consent timing must be separate from playback timing");
   for (Throwable error : new Throwable[]{new com.spotify.android.appremote.api.error.UserNotAuthorizedException("private authorization details", null), new java.io.IOException("private URL"), new java.net.SocketTimeoutException("private host")}) {
    Handler.reset();reports.clear();SpotifyController.authorizeRemote(null,"test",reports::add);SpotifyAppRemote.listener.onFailure(error);
    check(reports.size()==1 && reports.get(0).contains("("+CommandFailure.reason(error)+")") && !reports.get(0).contains("private"),"Setup screen must retain the safe SDK/network/timeout reason without provider messages");
@@ -69,9 +83,13 @@ public class Context {
  public Prefs getSharedPreferences(String n,int m){return new Prefs();}
  public static class Prefs { public String getString(String n,String d){return "test";} }
  public android.content.pm.PackageManager getPackageManager(){return null;}
- public <T>T getSystemService(Class<T> c){return c.cast(new android.media.AudioManager());}
+ public <T>T getSystemService(Class<T> c){return c.cast(c==android.net.ConnectivityManager.class?new android.net.ConnectivityManager():new android.media.AudioManager());}
  public void startActivity(Intent i){}
 }"""
+files['android/net/Network.java']='package android.net; public class Network {}'
+files['android/net/ConnectivityManager.java']='package android.net; public class ConnectivityManager {public static Network active;public static NetworkCapabilities capabilities;public Network getActiveNetwork(){return active;}public NetworkCapabilities getNetworkCapabilities(Network n){return n==active?capabilities:null;}}'
+files['android/net/NetworkCapabilities.java']='package android.net; public class NetworkCapabilities {public static final int TRANSPORT_CELLULAR=0,TRANSPORT_WIFI=1,NET_CAPABILITY_NOT_METERED=11,NET_CAPABILITY_VALIDATED=16;public final java.util.Set<Integer> transports=new java.util.HashSet<>(),capabilities=new java.util.HashSet<>();public boolean hasTransport(int t){return transports.contains(t);}public boolean hasCapability(int c){return capabilities.contains(c);}}'
+files['android/telephony/SignalStrength.java']='package android.telephony; public class SignalStrength {final int level;SignalStrength(int l){level=l;}public int getLevel(){return level;}}'
 files['android/media/AudioManager.java'] = "package android.media; public class AudioManager { public static int keys; public void dispatchMediaKeyEvent(android.view.KeyEvent e){keys++;} }"
 files['android/view/KeyEvent.java'] = "package android.view; public class KeyEvent { public static final int ACTION_DOWN=0,ACTION_UP=1,KEYCODE_MEDIA_PLAY=126; public KeyEvent(int a,int b){} }"
 files['com/spotify/protocol/client/CallResult.java'] = """package com.spotify.protocol.client;
@@ -141,5 +159,5 @@ for name,content in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content,encoding='utf-8');paths.append(str(p))
 sdk=Path(os.environ['ANDROID_HOME']); platform=max((sdk/'platforms').glob('*/android.jar'), key=lambda p: int(p.parent.name.split('-')[1].split('.')[0])); cp=str(out/'spotify.jar')+os.pathsep+str(platform)
 source=Path('app/src/main/java/com/steve/spotifywakeprobe')
-subprocess.run(['javac','-cp',cp,'-d',str(out/'classes'),*paths,*[str(source/n) for n in ['SpotifyController.java','VoiceCommand.java','PlaylistBrowse.java','CommandFailure.java']]],check=True)
+subprocess.run(['javac','-cp',cp,'-d',str(out/'classes'),*paths,*[str(source/n) for n in ['SpotifyController.java','VoiceCommand.java','PlaylistBrowse.java','CommandFailure.java','NetworkSnapshot.java']]],check=True)
 subprocess.run(['java','-cp',str(out/'classes')+os.pathsep+cp,'com.steve.spotifywakeprobe.ConnectionCheck'],check=True)

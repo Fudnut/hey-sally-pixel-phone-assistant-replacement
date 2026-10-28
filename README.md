@@ -4,7 +4,7 @@
 
 An experimental Android voice assistant for controlling the installed Spotify app with **Hey Sally**. This is an independent project, not an official Spotify product.
 
-Wake recognition runs locally with Vosk. In standard phone-input mode, Android's configured speech recognizer captures a command after the ready beep. Spotify App Remote controls playback, and Spotify Web API resolves named music and saved playlists.
+Wake recognition runs locally with Vosk. In standard phone-input mode, Android's configured speech recognizer captures a command after Sally says "Yes" (a beep if speech is unavailable). Spotify App Remote controls playback, and Spotify Web API resolves named music and saved playlists.
 
 For complete installation steps, all command forms, bug reports, pull requests and the APK release checklist, read [TESTING_AND_DISTRIBUTION.md](TESTING_AND_DISTRIBUTION.md).
 
@@ -15,7 +15,7 @@ Alpha.6 adds [incoming call interruption](docs/CALL_INTERRUPTION.md): grant Phon
 - **Spotify only, for now.** Hey Sally controls the Spotify app. It does not control YouTube Music, Deezer, Apple Music or any other player, and has no search or playlist support for them. See the [roadmap](#roadmap-toward-an-assistant-replacement).
 - **An Android phone connected over Bluetooth.** The standard phone-input setup uses the phone's microphone. Pair the phone with the car in Android as usual; the app does not manage pairing or start when Bluetooth connects. Music and replies use the phone's normal audio output. An experimental car-conversation mode in the current source listens for Hey Sally on the phone microphone, then uses one connected Bluetooth hands-free microphone and the car speakers for that conversation, and releases the car route afterwards so music returns to stereo. Setup requires ticking **Car conversations** and starting Sally while parked; a conversation never falls back to the phone mic if the car route is missing. (On the tested 2009 Pajero, holding the hands-free route open continuously turned music into telephone/mono audio, which is why the route is now held only during a conversation.) This split mode passes local checks but has not yet had its parked Pixel 8 Pro trial; other vehicles, long-term reliability and speech accuracy are not established. Driving operation must be voice-only.
 - **Optional place-based listening (this branch's source).** Tick **Only listen on Wi-Fi or with Bluetooth audio connected** and tap Start. Sally then listens only while the phone is on any Wi-Fi network or has any Bluetooth audio device connected (car, speaker, headphones), and closes the microphone otherwise, so Android's green mic dot goes off. It reads no network names or location. After Wi-Fi or Bluetooth drops, Sally waits 15 seconds before pausing, so leaving home in the car does not restart capture. In car-conversation mode, this applies to the phone-microphone wake listening between conversations.
-- **Hands-free, including a locked phone.** Say the wake phrase, wait for the beep, then speak one command. See [what cannot be replicated](#what-cannot-be-replicated-and-why) for the limits.
+- **Hands-free, including a locked phone.** Say the wake phrase, wait for Sally to say "Yes", then speak one command. See [what cannot be replicated](#what-cannot-be-replicated-and-why) for the limits.
 
 ## Download the test APK
 
@@ -59,7 +59,7 @@ Install the debug APK using Android's normal developer tools. A build signed wit
 3. Enter your Developer Client ID in the app and tap **Save Client ID**. A Client ID is public configuration; never put a Client Secret in the Android app.
 4. Use **Authorize Spotify playback** and **Authorize named music and private playlists** while unlocked. The latter uses PKCE and requests private-playlist access.
 5. Grant microphone and notification permissions. Choose **Spotify Wake Probe** under Android Settings → Apps → Default apps → Digital assistant app. The app can open Default apps settings for you.
-6. Say **Hey Sally**, wait for the ready beep, then speak a command. Use a fresh wake phrase for each command. After reboot, unlock once so the offline model is accessible.
+6. Say **Hey Sally**, wait for Sally to say **Yes** (or the fallback beep), then speak a command. Use a fresh wake phrase for each command. After reboot, unlock once so the offline model is accessible.
 
 A public repository does not remove Spotify's API access restrictions. Development-mode apps require allowed users and have limited capacity; check the current [quota-mode documentation](https://developer.spotify.com/documentation/web-api/concepts/quota-modes). Others should configure their own Developer application rather than expect access through a shared personal registration.
 
@@ -67,7 +67,7 @@ A public repository does not remove Spotify's API access restrictions. Developme
 
 The limited-test APK includes expanded control phrasing, numeric songs outside playlist browsing, spoken ordinary failures and additional wake diagnostics. It also cancels superseded ordinary requests and bounds their completion. Exact-release device tests remain outstanding.
 
-| Say after the beep | Behavior |
+| Say after "Yes" | Behavior |
 | --- | --- |
 | Open Spotify | Open the Spotify app |
 | Pause / Stop / Resume | Control current playback; Stop pauses |
@@ -108,7 +108,7 @@ Wake capture requests Android's privacy-sensitive microphone mode to reduce inte
 - Named music queries and Spotify authorization requests go to Spotify. No Gemini integration or project-operated backend is used.
 - OAuth tokens are stored encrypted using Android Keystore. Android backup and device transfer are disabled for app data.
 - Private debug builds can report up to three 30-second microphone-level and wake-stage summaries after capture starts, plus input type/sample-rate metadata. A debug-only switch can also compare capture sources, adding the source name, echo-cancellation/noise-suppression/gain flags and per-category level results. These contain aggregate levels and fixed keyword flags/counts; no audio, recognized words or transcripts. Release builds do not emit these probes or honour the switch.
-- Up to 1,024 diagnostic events remain in app-private storage. They contain timestamps, command categories, counts and outcomes, not playlist names, Spotify URIs or recognized words. Routine non-matching wake results are counted in five-minute summaries, which may be delayed by Android sleep; a partial summary is saved when the service stops. These counts may reveal nearby speech/noise activity. Accepted wakes, debounce rejections, timing and lock/screen states still reveal usage patterns.
+- Up to 4,096 diagnostic events remain in app-private storage. They contain timestamps, command categories, counts and outcomes, not playlist names, Spotify URIs or recognized words. Heard commands and Spotify connection results also note the network category (Wi-Fi, mobile, other or none), whether Android has validated its internet access, whether it is metered, and the mobile signal level (0–4). No network names, addresses or location are recorded. Spotify connection failures record the error type, not its message. Debug builds also record each car command's overall input level and duration, with no audio or words. Routine non-matching wake results are counted in five-minute summaries, which may be delayed by Android sleep; a partial summary is saved when the service stops. These counts may reveal nearby speech/noise activity. Accepted wakes, debounce rejections, timing and lock/screen states still reveal usage patterns.
 - **Copy diagnostic history** puts that history on the clipboard for voluntary sharing. Review it before posting publicly. **Start fresh diagnostic trial** clears the previous timeline; copy it first if needed. Clearing app storage or uninstalling deletes it.
 
 ## Roadmap: toward an Assistant replacement

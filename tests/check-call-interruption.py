@@ -19,6 +19,7 @@ public class Context {
  public final List<BroadcastReceiver> receivers=new ArrayList<>(); public boolean phonePermission=true;
  public <T> T getSystemService(Class<T> type) {
   Object result=type==android.media.AudioManager.class?audio:type==android.telecom.TelecomManager.class?telecom
+   :type==android.net.ConnectivityManager.class?new android.net.ConnectivityManager():type==android.telephony.TelephonyManager.class?new android.telephony.TelephonyManager()
    :type==android.app.KeyguardManager.class?new android.app.KeyguardManager():type==android.os.PowerManager.class?new android.os.PowerManager():new android.app.NotificationManager();
   return type.cast(result);
  }
@@ -32,9 +33,9 @@ public class Context {
  public android.content.pm.PackageManager getPackageManager(){return new android.content.pm.PackageManager();}
 }''',
     'android/content/pm/PackageManager.java': '''package android.content.pm; import java.util.*; public class PackageManager {
- public static final int PERMISSION_GRANTED=0;
+ public static final int PERMISSION_GRANTED=0;public static boolean noRecognizer;
  public static class ResolveInfoFlags {public static ResolveInfoFlags of(long f){return new ResolveInfoFlags();}}
- public List<ResolveInfo> queryIntentServices(android.content.Intent i,ResolveInfoFlags f){ResolveInfo r=new ResolveInfo();r.serviceInfo=new ServiceInfo();r.serviceInfo.packageName="com.google.android.as";return List.of(r);}
+ public List<ResolveInfo> queryIntentServices(android.content.Intent i,ResolveInfoFlags f){if(noRecognizer)return List.of();ResolveInfo r=new ResolveInfo();r.serviceInfo=new ServiceInfo();r.serviceInfo.packageName="com.google.android.as";return List.of(r);}
 }''',
     'android/content/pm/ResolveInfo.java': 'package android.content.pm; public class ResolveInfo {public ServiceInfo serviceInfo;}',
     'android/content/pm/ServiceInfo.java': 'package android.content.pm; public class ServiceInfo {public static final int FOREGROUND_SERVICE_TYPE_MICROPHONE=128;public String packageName;}',
@@ -70,6 +71,11 @@ public class Context {
     'android/os/PowerManager.java': 'package android.os; public class PowerManager {public boolean isInteractive(){return true;}}',
     'org/json/JSONObject.java': '''package org.json; public class JSONObject {String json; public JSONObject(String s){json=s;}
  public String optString(String k){var m=java.util.regex.Pattern.compile("\\"" + k + "\\" *: *\\"([^\\"]*)\\"").matcher(json);return m.find()?m.group(1):"";}}''',
+    'android/os/Bundle.java': 'package android.os; public class Bundle {public final java.util.Map<String,Object> values=new java.util.HashMap<>();public void putFloat(String k,float v){values.put(k,v);}public java.util.ArrayList<String> getStringArrayList(String k){return null;}}',
+    'android/net/Network.java': 'package android.net; public class Network {}',
+    'android/net/ConnectivityManager.java': 'package android.net; public class ConnectivityManager {public static Network active;public static NetworkCapabilities capabilities;public Network getActiveNetwork(){return active;}public NetworkCapabilities getNetworkCapabilities(Network n){return n==active?capabilities:null;}}',
+    'android/net/NetworkCapabilities.java': 'package android.net; public class NetworkCapabilities {public static final int TRANSPORT_CELLULAR=0,TRANSPORT_WIFI=1,NET_CAPABILITY_NOT_METERED=11,NET_CAPABILITY_VALIDATED=16;public final java.util.Set<Integer> transports=new java.util.HashSet<>(),capabilities=new java.util.HashSet<>();public boolean hasTransport(int t){return transports.contains(t);}public boolean hasCapability(int c){return capabilities.contains(c);}}',
+    'android/telephony/SignalStrength.java': 'package android.telephony; public class SignalStrength {final int level;SignalStrength(int l){level=l;}public int getLevel(){return level;}}',
     'android/os/Looper.java': 'package android.os; public class Looper {public static Looper getMainLooper(){return new Looper();}}',
     'android/os/Handler.java': '''package android.os; import java.util.*; public class Handler {
  public static final Map<Runnable,Long> timers=new LinkedHashMap<>(); public static long now;
@@ -78,8 +84,8 @@ public class Context {
  public static void advance(long ms){now+=ms;for(var e:new ArrayList<>(timers.entrySet()))if(e.getValue()<=now&&timers.remove(e.getKey())!=null)e.getKey().run();}
 }''',
     'android/os/SystemClock.java': 'package android.os; public class SystemClock {public static long elapsedRealtime(){return Handler.now;}}',
-    'android/media/AudioAttributes.java': '''package android.media; public class AudioAttributes {public static final int USAGE_MEDIA=1,USAGE_ASSISTANT=16,USAGE_VOICE_COMMUNICATION=2,CONTENT_TYPE_SPEECH=1;
- public static class Builder {public Builder setUsage(int i){return this;} public Builder setContentType(int i){return this;} public AudioAttributes build(){return new AudioAttributes();}}}''',
+    'android/media/AudioAttributes.java': '''package android.media; public class AudioAttributes {public static final int USAGE_MEDIA=1,USAGE_ASSISTANT=16,USAGE_VOICE_COMMUNICATION=2,CONTENT_TYPE_SPEECH=1;public int usage;
+ public static class Builder {int usage;public Builder setUsage(int i){usage=i;return this;} public Builder setContentType(int i){return this;} public AudioAttributes build(){AudioAttributes a=new AudioAttributes();a.usage=usage;return a;}}}''',
     'android/media/AudioFocusRequest.java': '''package android.media; public class AudioFocusRequest {public AudioManager.OnAudioFocusChangeListener listener;
  public static class Builder {AudioFocusRequest r=new AudioFocusRequest(); public Builder(int i){} public Builder setAudioAttributes(AudioAttributes a){return this;}
  public Builder setOnAudioFocusChangeListener(AudioManager.OnAudioFocusChangeListener l,android.os.Handler h){r.listener=l;return this;} public AudioFocusRequest build(){return r;}}}''',
@@ -95,14 +101,15 @@ public class AudioManager {
  public int requestAudioFocus(AudioFocusRequest r){focus=r;focusRequests++;return focusResult;} public int abandonAudioFocusRequest(AudioFocusRequest r){abandons++;return 1;}
  public void dispatchMediaKeyEvent(KeyEvent e){keys.add(e.action+":"+e.code);}
 }''',
-    'android/media/ToneGenerator.java': 'package android.media; public class ToneGenerator {public static final int TONE_PROP_BEEP=1;public static int beeps;public ToneGenerator(int s,int v){}public void startTone(int t,int d){beeps++;}public void release(){}}',
+    'android/media/ToneGenerator.java': 'package android.media; public class ToneGenerator {public static final int TONE_PROP_BEEP=1;public static int beeps,lastStream=-1;int stream;public ToneGenerator(int s,int v){stream=s;}public void startTone(int t,int d){beeps++;lastStream=stream;}public void release(){}}',
     'android/view/KeyEvent.java': 'package android.view; public class KeyEvent {public static final int ACTION_DOWN=0,ACTION_UP=1,KEYCODE_MEDIA_PAUSE=127;public int action,code;public KeyEvent(int a,int c){action=a;code=c;}}',
     'android/telecom/TelecomManager.java': '''package android.telecom; public class TelecomManager {
  public boolean busy,denied; public java.util.Deque<Boolean> probes=new java.util.ArrayDeque<>();
  public boolean isInCall(){if(denied)throw new SecurityException();return probes.isEmpty()?busy:probes.removeFirst();}}''',
     'android/telephony/TelephonyManager.java': '''package android.telephony; public class TelephonyManager {
  public static final String ACTION_PHONE_STATE_CHANGED="android.intent.action.PHONE_STATE", EXTRA_STATE="state",
- EXTRA_STATE_RINGING="RINGING", EXTRA_STATE_OFFHOOK="OFFHOOK", EXTRA_STATE_IDLE="IDLE";}''',
+ EXTRA_STATE_RINGING="RINGING", EXTRA_STATE_OFFHOOK="OFFHOOK", EXTRA_STATE_IDLE="IDLE";
+ public static int level=-1;public SignalStrength getSignalStrength(){return level<0?null:new SignalStrength(level);}}''',
     'android/speech/SpeechRecognizer.java': '''package android.speech; public class SpeechRecognizer {
  public static final String RESULTS_RECOGNITION="results"; public static final int ERROR_NO_MATCH=7,ERROR_SPEECH_TIMEOUT=6,ERROR_NETWORK=2,ERROR_NETWORK_TIMEOUT=1,ERROR_SERVER=4,ERROR_SERVER_DISCONNECTED=11,ERROR_LANGUAGE_NOT_SUPPORTED=12,ERROR_LANGUAGE_UNAVAILABLE=13;
  public static int starts;public static boolean isRecognitionAvailable(android.content.Context c){return true;}
@@ -110,15 +117,18 @@ public class AudioManager {
  public void setRecognitionListener(RecognitionListener l){} public void startListening(android.content.Intent i){starts++;} public void cancel(){} public void destroy(){}
 }''',
     'android/speech/tts/TextToSpeech.java': '''package android.speech.tts; public class TextToSpeech {public static final int SUCCESS=0,ERROR=-1,QUEUE_FLUSH=0;public static int stops,created;public static TextToSpeech last;public OnInitListener init;public UtteranceProgressListener progress;
- public interface OnInitListener {void onInit(int s);}public TextToSpeech(android.content.Context c,OnInitListener l){init=l;last=this;created++;}public void setAudioAttributes(android.media.AudioAttributes a){}
- public void setOnUtteranceProgressListener(UtteranceProgressListener l){progress=l;}public int speak(String s,int q,android.os.Bundle b,String id){return 0;}public void stop(){stops++;}public void shutdown(){}
+ public static class Engine {public static final String KEY_PARAM_VOLUME="volume";}
+ /** autoInit completes initialization on the next Handler turn; autoSpeak finishes ready cues at once. */
+ public static boolean autoInit,autoSpeak;public static final java.util.List<String> cues=new java.util.ArrayList<>();public static TextToSpeech cueSpeaker;public static String cueId;public static Object cueVolume;public static int cueUsage=-1;android.media.AudioAttributes attributes;
+ public interface OnInitListener {void onInit(int s);}public TextToSpeech(android.content.Context c,OnInitListener l){init=l;last=this;created++;if(autoInit)android.os.Handler.timers.put(()->l.onInit(SUCCESS),android.os.Handler.now);}public void setAudioAttributes(android.media.AudioAttributes a){attributes=a;}
+ public void setOnUtteranceProgressListener(UtteranceProgressListener l){progress=l;}public int speak(String s,int q,android.os.Bundle b,String id){if(id.startsWith("cue")){cues.add(s);cueSpeaker=this;cueId=id;cueVolume=b==null?null:b.values.get(Engine.KEY_PARAM_VOLUME);cueUsage=attributes==null?-1:attributes.usage;if(autoSpeak){progress.onStart(id);progress.onDone(id);}}return 0;}public void stop(){stops++;}public void shutdown(){}
 }''',
     'android/speech/tts/UtteranceProgressListener.java': 'package android.speech.tts;public abstract class UtteranceProgressListener {public abstract void onStart(String s);public abstract void onDone(String s);public abstract void onError(String s);}',
     'android/util/Log.java': 'package android.util;public class Log {public static int i(String t,String s){return 0;}public static int e(String t,String s){return 0;}public static int w(String t,String s){return 0;}}',
     'org/vosk/Model.java': 'package org.vosk;public class Model {public void close(){}}',
     'org/vosk/Recognizer.java': 'package org.vosk;public class Recognizer {public Recognizer(Model m,float r){}public void close(){}}',
     'org/vosk/android/RecognitionListener.java': 'package org.vosk.android;public interface RecognitionListener {void onPartialResult(String s);void onResult(String s);void onFinalResult(String s);void onError(Exception e);void onTimeout();}',
-    'org/vosk/android/SpeechService.java': 'package org.vosk.android;public class SpeechService {public SpeechService(org.vosk.Recognizer r,float f){}public void startListening(RecognitionListener l,int t){}public void cancel(){}public void shutdown(){}}',
+    'org/vosk/android/SpeechService.java': 'package org.vosk.android;public class SpeechService {public static int starts;public SpeechService(org.vosk.Recognizer r,float f){}public void startListening(RecognitionListener l,int t){starts++;}public void cancel(){}public void shutdown(){}}',
     'org/vosk/android/StorageService.java': 'package org.vosk.android;public class StorageService {public static void unpack(android.content.Context c,String a,String b,java.util.function.Consumer<org.vosk.Model> ok,java.util.function.Consumer<Exception> error){ok.accept(new org.vosk.Model());}}',
     'com/steve/spotifywakeprobe/WakeMicrophone.java': '''package com.steve.spotifywakeprobe;import org.vosk.android.RecognitionListener;public class WakeMicrophone {
  public static int opened,closed;public static WakeMicrophone last;public static boolean lastCar,lastCommand,holdBluetooth;public static final java.util.List<String> trace=new java.util.ArrayList<>();
@@ -156,7 +166,8 @@ for name, content in files.items():
     paths.append(str(path))
 sdk = Path(os.environ['ANDROID_HOME'])
 platform = max((sdk / 'platforms').glob('*/android.jar'), key=lambda p: p.parent.name)
-production = ['WakeService', 'VoiceCommand', 'PlaylistBrowse', 'WakePhrase', 'CommandLanguage', 'CommandFailure', 'CarAudioSession']
+production = ['WakeService', 'VoiceCommand', 'PlaylistBrowse', 'WakePhrase', 'CommandLanguage', 'CommandFailure', 'CarAudioSession',
+              'ReadyCue', 'NetworkSnapshot']
 if (source / 'CallAudioMonitor.java').exists():
     production.append('CallAudioMonitor')
 classes = out / 'classes'

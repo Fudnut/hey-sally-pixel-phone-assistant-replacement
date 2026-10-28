@@ -138,6 +138,81 @@ public class CallInterruptionCheck {
         service.telecom.busy=true;service.broadcast(TelephonyManager.EXTRA_STATE_RINGING);Handler.advance(0);
         check(service.stopsSelf==0,"A real call must invalidate queued capture failures from the previous generation");
         service.onDestroy();Handler.asyncPosts=false;
+        // Spoken "Yes" before the system recognizer opens, so it never hears Sally.
+        TextToSpeech.autoInit = true; TextToSpeech.autoSpeak = false; TextToSpeech.cues.clear();
+        android.media.ToneGenerator.beeps = 0;
+        service = start(false, true); Handler.advance(0);
+        listen(service, true);
+        check(TextToSpeech.cues.equals(List.of("Yes")) && SpeechRecognizer.starts == 0 && android.media.ToneGenerator.beeps == 0,
+                "A phone command must say Yes before the recognizer opens");
+        check(Float.valueOf(1.0f).equals(TextToSpeech.cueVolume) && TextToSpeech.cueUsage == android.media.AudioAttributes.USAGE_MEDIA,
+                "The ready cue must use full TTS volume and the replies' usage");
+        TextToSpeech.cueSpeaker.progress.onDone(TextToSpeech.cueId);
+        check(SpeechRecognizer.starts == 1 && android.media.ToneGenerator.beeps == 0, "The recognizer must open once Yes is done");
+        Handler.advance(2000);
+        check(SpeechRecognizer.starts == 1 && android.media.ToneGenerator.beeps == 0, "A finished cue must not fall back later");
+        service.onDestroy();
+
+        service = start(false, true); Handler.advance(0);
+        int ttsStops = TextToSpeech.stops;
+        listen(service, true);
+        Handler.advance(1499);
+        check(SpeechRecognizer.starts == 0, "Listening must wait up to 1.5 seconds for the spoken cue");
+        Handler.advance(1);
+        check(android.media.ToneGenerator.beeps == 1 && SpeechRecognizer.starts == 1 && TextToSpeech.stops > ttsStops,
+                "A slow cue must be stopped and replaced by the beep before listening");
+        TextToSpeech.cueSpeaker.progress.onDone(TextToSpeech.cueId);
+        check(SpeechRecognizer.starts == 1, "A late cue completion must not open a second recognizer");
+        service.onDestroy();
+
+        TextToSpeech.autoInit = false; android.media.ToneGenerator.beeps = 0;
+        service = start(false, true);
+        TextToSpeech.last.init.onInit(TextToSpeech.ERROR);
+        listen(service, true);
+        check(android.media.ToneGenerator.beeps == 1 && SpeechRecognizer.starts == 1, "Failed TTS must beep at once, then listen");
+        service.onDestroy();
+
+        TextToSpeech.autoInit = true; android.media.ToneGenerator.beeps = 0;
+        service = start(false, true); Handler.advance(0);
+        listen(service, true);
+        service.telecom.busy = true; service.broadcast(TelephonyManager.EXTRA_STATE_RINGING);
+        TextToSpeech.cueSpeaker.progress.onDone(TextToSpeech.cueId);
+        Handler.advance(2000);
+        check(SpeechRecognizer.starts == 0 && android.media.ToneGenerator.beeps == 0,
+                "A call during the cue must cancel it without opening a recognizer");
+        service.onDestroy();
+
+        android.content.pm.PackageManager.noRecognizer = true; org.vosk.android.SpeechService.starts = 0;
+        TextToSpeech.cues.clear();
+        service = start(false, true); Handler.advance(0);
+        listen(service, true);
+        check(org.vosk.android.SpeechService.starts == 0 && TextToSpeech.cues.size() == 1,
+                "Local Vosk commands must also wait for the spoken cue");
+        TextToSpeech.cueSpeaker.progress.onDone(TextToSpeech.cueId);
+        check(org.vosk.android.SpeechService.starts == 1 && DiagnosticHistory.events.contains("COMMAND_READY VOSK"),
+                "Local Vosk listening must start after Yes");
+        service.onDestroy();
+        android.content.pm.PackageManager.noRecognizer = false; TextToSpeech.autoInit = false;
+
+        // Network categories at each heard command (no names or addresses).
+        android.net.ConnectivityManager.active = new android.net.Network();
+        android.net.NetworkCapabilities cellular = new android.net.NetworkCapabilities();
+        cellular.transports.add(android.net.NetworkCapabilities.TRANSPORT_CELLULAR);
+        android.net.ConnectivityManager.capabilities = cellular;
+        TelephonyManager.level = 2;
+        DiagnosticHistory.events.clear();
+        service = start(false, true);
+        command(service);
+        check(DiagnosticHistory.events.contains("COMMAND_HEARD RESUME net=cellular validated=false metered=true signal=2"),
+                "COMMAND_HEARD must record transport, validation, metering and signal level");
+        service.onDestroy();
+        android.net.ConnectivityManager.active = null; TelephonyManager.level = -1; DiagnosticHistory.events.clear();
+        service = start(false, true);
+        command(service);
+        check(DiagnosticHistory.events.contains("COMMAND_HEARD RESUME net=none signal=unknown"),
+                "COMMAND_HEARD must say when there is no network");
+        service.onDestroy();
+        android.net.ConnectivityManager.capabilities = null;
         System.out.println("Call interruption: pause, cancellation, microphone suspension, recovery, dual-SIM and focus denial checks passed");
     }
 }

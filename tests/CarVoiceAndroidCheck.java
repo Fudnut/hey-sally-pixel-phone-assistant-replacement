@@ -48,6 +48,30 @@ public final class CarVoiceAndroidCheck {
             check(errors[0]==1,"Silenced car capture must fail rather than decode unavailable input");
         }finally{mic.close();}
         check(AudioRecord.last.stopped,"Closing real capture must unblock its read worker");
+        // Road noise can hold off Vosk's endpoint: partials must still reach the command logic.
+        List<String> partials=new ArrayList<>();int[] finals={0};
+        org.vosk.android.RecognitionListener partialListener=new org.vosk.android.RecognitionListener(){
+            public void onPartialResult(String x){partials.add(x);}public void onResult(String x){finals[0]++;}
+            public void onFinalResult(String x){}public void onError(Exception x){}public void onTimeout(){}
+        };
+        org.vosk.Recognizer.endpoint=false;
+        for(boolean debug:new boolean[]{true,false}){
+            Context noisy=new Context();noisy.audio.inputType=7;Context.debuggable=debug;
+            partials.clear();DiagnosticHistory.events.clear();
+            WakeMicrophone car=new WakeMicrophone(noisy,new org.vosk.Model(),true,true,x->{});
+            try{
+                car.start(partialListener,()->{});waitRead(1);
+                for(int i=0;i<3;i++){AudioRecord.last.offer();waitRead(i+2);}
+                Handler.advance(0);
+                check(partials.equals(List.of("nex","nex","nex"))&&finals[0]==0,
+                        "Each non-final car command buffer must deliver its Vosk partial");
+                car.pause();
+                boolean level=DiagnosticHistory.events.contains("CAR_COMMAND_LEVEL audioMs=600 rms=1000 peak=1000");
+                check(level==debug,debug?"A debug car command must record its aggregate level and duration"
+                        :"Release builds must not record car command levels");
+            }finally{car.close();}
+        }
+        org.vosk.Recognizer.endpoint=true;Context.debuggable=false;
         int closedBefore=VoskWakeDecoder.closes;
         org.vosk.Recognizer.failConstruction=true;
         try {

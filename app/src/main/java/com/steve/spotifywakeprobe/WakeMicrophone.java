@@ -48,6 +48,9 @@ final class WakeMicrophone implements AutoCloseable {
     private boolean commandPhase, phaseReadySent;
     private volatile long phaseGeneration;
     private Runnable commandDeadline;
+    // Debug-only aggregate input level of one car command phase (guarded by phaseLock).
+    private long commandSamples, commandSquares;
+    private int commandPeak;
     private final Handler main = new Handler(Looper.getMainLooper());
     private volatile boolean closed;
     private Thread worker;
@@ -153,12 +156,30 @@ final class WakeMicrophone implements AutoCloseable {
                         abPeak = Math.max(abPeak, Math.abs(value));
                         abSamples++;
                     }
-                    String words = null;
+                    String words = null, partial = null;
                     synchronized (phaseLock) {
                         if (selectedPhase != phaseGeneration) { Arrays.fill(buffer, (short) 0); continue; }
-                        if (count > 0) words = !selectedCommand ? detector.accept(buffer, count)
-                                : commandDecoder.acceptWaveForm(buffer, count)
-                                    ? new JSONObject(commandDecoder.getResult()).optString("text") : null;
+                        if (count > 0 && !selectedCommand) words = detector.accept(buffer, count);
+                        else if (count > 0) {
+                            if (commandDecoder.acceptWaveForm(buffer, count))
+                                words = new JSONObject(commandDecoder.getResult()).optString("text");
+                            // Road noise can hold off Vosk's endpoint. Like SpeechService, report each
+                            // partial so a stable command, or the timeout's fallback, can still act.
+                            else partial = new JSONObject(commandDecoder.getPartialResult()).optString("partial");
+                            if (requireBluetooth && debugCapture) for (int i = 0; i < count; i++) {
+                                int value = buffer[i];
+                                commandSquares += (long) value * value;
+                                commandPeak = Math.max(commandPeak, Math.abs(value));
+                                commandSamples++;
+                            }
+                        }
+                    }
+                    if (partial != null && !partial.isEmpty()) {
+                        String hypothesis = new JSONObject().put("partial", partial).toString();
+                        main.post(() -> {
+                            if (closed || selectedPhase != phaseGeneration) return;
+                            selected.onPartialResult(hypothesis);
+                        });
                     }
                     if (abProbe && words != null) {
                         // Category and level only, never the recognized words.
@@ -216,6 +237,7 @@ final class WakeMicrophone implements AutoCloseable {
     /** Suspend decoding while retaining the physical car recorder and mode activity. */
     void pause() {
         synchronized (phaseLock) {
+            reportCommandLevel();
             phaseGeneration++; phaseListener = null; phaseReady = null; phaseReadySent = false;
             if (commandDeadline != null) { main.removeCallbacks(commandDeadline); commandDeadline = null; }
         }
@@ -255,6 +277,14 @@ final class WakeMicrophone implements AutoCloseable {
                 main.postDelayed(commandDeadline, 20000);
             }
         });
+    }
+
+    // Level and duration only, never audio or words; a half-second floor skips the gap before a cue.
+    private void reportCommandLevel() {
+        if (commandSamples >= SAMPLE_RATE / 2)
+            DiagnosticHistory.record(context, "CAR_COMMAND_LEVEL audioMs=" + commandSamples * 1000 / SAMPLE_RATE
+                    + " rms=" + Math.round(Math.sqrt(commandSquares / (double) commandSamples)) + " peak=" + commandPeak);
+        commandSamples = 0; commandSquares = 0; commandPeak = 0;
     }
 
     private static String readAbSource(Context context) {
@@ -306,6 +336,7 @@ final class WakeMicrophone implements AutoCloseable {
         if (worker != null) while (worker.isAlive()) {
             try { worker.join(); } catch (InterruptedException ignored) { interrupted = true; }
         }
+        synchronized (phaseLock) { reportCommandLevel(); }
         try { detector.close(); }
         finally {
             try { if (commandDecoder != null) commandDecoder.close(); }
